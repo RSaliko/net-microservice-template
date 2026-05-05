@@ -38,12 +38,21 @@ public static class DependencyInjection
             options.SubstituteApiVersionInUrl = true;
         });
 
-        // Health Checks
+        // Health Checks - Extract connection string logic from Persistence layer
         var host = Environment.GetEnvironmentVariable("MSSQL_HOST") ?? "localhost";
         var port = Environment.GetEnvironmentVariable("MSSQL_PORT") ?? "14333";
         var password = Environment.GetEnvironmentVariable("MSSQL_SA_PASSWORD") ?? "Your_strong_Password123";
         var dbName = Environment.GetEnvironmentVariable("ORDER_DB_NAME") ?? "OrderServiceDb";
-        var connectionString = $"Server={host},{port};Database={dbName};User Id=sa;Password={password};TrustServerCertificate=True;Encrypt=False";
+
+        // Match Persistence DependencyInjection logic: use config as fallback if default password
+        var connectionString = !string.IsNullOrEmpty(password) && password != "Your_strong_Password123"
+            ? $"Server={host},{port};Database={dbName};User Id=sa;Password={password};TrustServerCertificate=True;Encrypt=False"
+            : configuration.GetConnectionString("DefaultConnection");
+
+        if (string.IsNullOrWhiteSpace(connectionString))
+        {
+            throw new InvalidOperationException("Connection string not available for health checks. Check 'DefaultConnection' in config or MSSQL_SA_PASSWORD env var.");
+        }
 
         services.AddStandardHealthChecks(connectionString, null);
 

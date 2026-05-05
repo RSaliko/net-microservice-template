@@ -34,10 +34,11 @@ public class OrderServiceDbInitializer(OrderServiceDbContext context) : IDbIniti
 
         foreach (var order in orders)
         {
-            // Add some items
-            for (int i = 0; i < new Random().Next(1, 4); i++)
+            // Add some items - use single Faker instance for consistent Random
+            var itemCount = order.Faker.Random.Int(1, 3);
+            for (int i = 0; i < itemCount; i++)
             {
-                order.AddItem(Guid.NewGuid(), new Random().Next(1, 5), (decimal)new Random().NextDouble() * 500);
+                order.AddItem(Guid.NewGuid(), order.Faker.Random.Int(1, 5), (decimal)order.Faker.Random.Double() * 500);
             }
 
             var f = new Faker();
@@ -49,7 +50,7 @@ public class OrderServiceDbInitializer(OrderServiceDbContext context) : IDbIniti
                 f.Address.Country()
             ));
 
-            if (new Random().NextDouble() > 0.3) order.Activate();
+            if (f.Random.Double() > 0.3) order.Activate();
         }
 
         await _context.Orders.AddRangeAsync(orders);
