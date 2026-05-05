@@ -1,0 +1,94 @@
+services:
+  api-gateway:
+    container_name: net-gateway
+    image: net-gateway
+    build:
+      context: .
+      dockerfile: src/ApiGateway/Dockerfile
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ReverseProxy__Clusters__product-service-cluster__Destinations__destination1__Address=http://product-service:8080
+      - ReverseProxy__Clusters__order-service-cluster__Destinations__destination1__Address=http://order-service:8080
+    ports:
+      - "3000:8080"
+    depends_on:
+      - product-service
+      - order-service
+      - jaeger
+
+  product-service:
+    container_name: net-product-service
+    image: net-product-service
+    build:
+      context: .
+      dockerfile: src/ProductService/Dockerfile
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Server=sqlserver;Database=ProductServiceDb;User Id=sa;Password=Your_strong_Password123;TrustServerCertificate=True;Encrypt=False
+      - RabbitMQ__Host=rabbitmq
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - MSSQL_HOST=sqlserver
+      - MSSQL_PORT=1433
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4317
+    ports:
+      - "5170:8080"
+    depends_on:
+      - sqlserver
+      - rabbitmq
+      - redis
+      - jaeger
+
+  order-service:
+    container_name: net-order-service
+    image: net-order-service
+    build:
+      context: .
+      dockerfile: src/OrderService/Dockerfile
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Server=sqlserver;Database=OrderServiceDb;User Id=sa;Password=Your_strong_Password123;TrustServerCertificate=True;Encrypt=False
+      - RabbitMQ__Host=rabbitmq
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - MSSQL_HOST=sqlserver
+      - MSSQL_PORT=1433
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4317
+    ports:
+      - "5084:8080"
+    depends_on:
+      - sqlserver
+      - rabbitmq
+      - redis
+      - jaeger
+
+  sqlserver:
+    container_name: net-sqlserver
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      - ACCEPT_EULA=Y
+      - MSSQL_SA_PASSWORD=Your_strong_Password123
+    ports:
+      - "14333:1433"
+
+  rabbitmq:
+    container_name: net-rabbitmq
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+
+  redis:
+    container_name: net-redis
+    image: redis:latest
+    ports:
+      - "6379:6379"
+
+  jaeger:
+    container_name: net-jaeger
+    image: jaegertracing/all-in-one:latest
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+    ports:
+      - "16686:16686"
+      - "4317:4317"
