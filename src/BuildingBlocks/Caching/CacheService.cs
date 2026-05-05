@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Microsoft.Extensions.Caching.Distributed;
+using System.Text.Json.Serialization;
 
 namespace BuildingBlocks.Caching;
 
@@ -18,7 +19,15 @@ public class CacheService(IDistributedCache cache) : ICacheService
         if (string.IsNullOrEmpty(cachedValue))
             return default;
 
-        return JsonSerializer.Deserialize<T>(cachedValue);
+        try
+        {
+            return JsonSerializer.Deserialize<T>(cachedValue);
+        }
+        catch (JsonException)
+        {
+            // Cache corrupted, return null to force fresh fetch
+            return default;
+        }
     }
 
     public async Task SetAsync<T>(string key, T value, TimeSpan? expiration = null, CancellationToken cancellationToken = default)

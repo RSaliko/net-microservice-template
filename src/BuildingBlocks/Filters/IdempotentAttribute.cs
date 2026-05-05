@@ -31,8 +31,17 @@ public class IdempotentAttribute : Attribute, IAsyncActionFilter
 
         var executedContext = await next();
 
-        // In a real scenario, we would cache the actual response here.
-        // For now, we just leave it as "processed" to prevent immediate retries.
-        await cacheService.SetAsync(cacheKey, "processed", TimeSpan.FromHours(1));
+        // Only cache as processed if request succeeded (2xx)
+        if (executedContext.HttpContext.Response.StatusCode >= 200 && executedContext.HttpContext.Response.StatusCode < 300)
+        {
+            // In a real scenario, we would cache the actual response here.
+            // For now, we just leave it as "processed" to prevent immediate retries.
+            await cacheService.SetAsync(cacheKey, "processed", TimeSpan.FromHours(1));
+        }
+        else
+        {
+            // Remove idempotency key on failure to allow retries
+            await cacheService.RemoveAsync(cacheKey);
+        }
     }
 }

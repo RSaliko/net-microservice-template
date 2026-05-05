@@ -10,7 +10,10 @@ public static class JwtExtensions
 {
     public static IServiceCollection AddJwtAuthentication(this IServiceCollection services, IConfiguration configuration)
     {
-        var secret = configuration["Jwt:Secret"] ?? "Super_Secret_Key_For_Jwt_Template_12345!";
+        var secret = configuration["Jwt:Secret"];
+        if (string.IsNullOrEmpty(secret))
+            throw new InvalidOperationException("JWT Secret is not configured. Set 'Jwt:Secret' in appsettings.json");
+        
         var issuer = configuration["Jwt:Issuer"] ?? "TicketFlow";
         var audience = configuration["Jwt:Audience"] ?? "TicketFlowUI";
 

@@ -29,24 +29,37 @@ public class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logger) : IE
     }
 }
 
-public class ValidationExceptionHandler : IExceptionHandler
+public class ValidationExceptionHandler(ILogger<ValidationExceptionHandler> logger) : IExceptionHandler
 {
+    private readonly ILogger<ValidationExceptionHandler> _logger = logger;
+
     public async ValueTask<bool> TryHandleAsync(HttpContext httpContext, Exception exception, CancellationToken cancellationToken)
     {
         if (exception is not FluentValidation.ValidationException validationException) return false;
 
-        var errors = validationException.Errors
-            .GroupBy(e => e.PropertyName)
-            .ToDictionary(
-                g => g.Key,
-                g => g.Select(e => e.ErrorMessage).ToArray()
-            );
+        _logger.LogWarning(validationException, "Validation failed: {Errors}", 
+            string.Join(", ", validationException.Errors.Select(e => $"{e.PropertyName}:{e.ErrorMessage}")));
 
-        var response = new ApiResponse(400, "Validation Failed", errors, "VAL_VALIDATION_FAILED");
-        
-        httpContext.Response.StatusCode = 400;
-        await httpContext.Response.WriteAsJsonAsync(response, cancellationToken).ConfigureAwait(false);
+        try
+        {
+            var errors = validationException.Errors
+                .GroupBy(e => e.PropertyName)
+                .ToDictionary(
+                    g => g.Key,
+                    g => g.Select(e => e.ErrorMessage).ToArray()
+                );
 
-        return true;
+            var response = new ApiResponse(400, "Validation Failed", errors, "VAL_VALIDATION_FAILED");
+            
+            httpContext.Response.StatusCode = 400;
+            await httpContext.Response.WriteAsJsonAsync(response, cancellationToken).ConfigureAwait(false);
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to serialize validation error response");
+            return false;
+        }
     }
 }
