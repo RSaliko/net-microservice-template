@@ -12,9 +12,9 @@ public class RedisCacheService
         _cache = cache;
     }
 
-    public async Task<T?> GetAsync<T>(string key, CancellationToken ct)
+    public async Task<T?> GetAsync<T>(string key, CancellationToken cancellationToken)
     {
-        var data = await _cache.GetStringAsync(key, ct);
+        var data = await _cache.GetStringAsync(key, cancellationToken);
         return data == null ? default : JsonConvert.DeserializeObject<T>(data);
     }
 }

@@ -24,14 +24,14 @@ public class PaymentService
                 TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)) + TimeSpan.FromMilliseconds(new Random().Next(0, 100)));
     }
 
-    public async Task<bool> ProcessPaymentAsync(Guid orderId, decimal amount, CancellationToken ct)
+    public async Task<bool> ProcessPaymentAsync(Guid orderId, decimal amount, CancellationToken cancellationToken)
     {
         return await _retryPolicy.ExecuteAsync(async () =>
         {
             _logger.LogInformation("Processing payment for Order {OrderId}...", orderId);
             
             // Simulate external call
-            await Task.Delay(100, ct);
+            await Task.Delay(100, cancellationToken);
             
             return true;
         });

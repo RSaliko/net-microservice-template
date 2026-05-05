@@ -7,15 +7,15 @@ namespace OrderService.Persistence.Repositories;
 
 public class OrderRepository(OrderServiceDbContext context) : IOrderRepository
 {
-    public async Task<Order?> GetByIdAsync(Guid id, CancellationToken ct)
+    public async Task<Order?> GetByIdAsync(Guid id, CancellationToken cancellationToken)
     {
         return await context.Orders
             .Include(x => x.Items)
-            .FirstOrDefaultAsync(x => x.Id == id, ct);
+            .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
     }
 
-    public async Task AddAsync(Order order, CancellationToken ct)
+    public async Task AddAsync(Order order, CancellationToken cancellationToken)
     {
-        await context.Orders.AddAsync(order, ct);
+        await context.Orders.AddAsync(order, cancellationToken);
     }
 }
