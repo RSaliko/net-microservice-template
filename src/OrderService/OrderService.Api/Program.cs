@@ -1,0 +1,60 @@
+using BuildingBlocks.Conventions;
+using BuildingBlocks.Extensions;
+using Microsoft.AspNetCore.Mvc.ApplicationModels;
+using OrderService.Application;
+using OrderService.Persistence;
+using OrderService.Infrastructure;
+using OrderService.Api.Extensions;
+using BuildingBlocks.HealthChecks;
+using OrderService.Persistence.Contexts;
+using Microsoft.EntityFrameworkCore;
+using Serilog;
+
+var builder = WebApplication.CreateBuilder(args);
+
+// Serilog
+builder.Host.UseSerilog((context, services, configuration) => configuration
+    .ReadFrom.Configuration(context.Configuration)
+    .ReadFrom.Services(services)
+    .Enrich.FromLogContext());
+
+// ── Service Layers ────────────────────────────────────────────────────────────
+builder.Services.AddApplication();
+builder.Services.AddPersistence(builder.Configuration);
+builder.Services.AddInfrastructure(builder.Configuration);
+builder.Services.AddApiServices(builder.Configuration, builder.Environment);
+
+builder.Services.AddBuildingBlocks(builder.Configuration);
+builder.Services.AddOpenTelemetryObservability(builder.Configuration, "OrderService");
+builder.Services.AddJwtAuthentication(builder.Configuration);
+
+// ── API Controllers ───────────────────────────────────────────────────────────
+builder.Services.AddControllers(options =>
+{
+    options.Conventions.Add(new RouteTokenTransformerConvention(new KebabCaseConvention()));
+})
+.AddNewtonsoftJson();
+
+// ── Performance & Compression ─────────────────────────────────────────────────
+builder.Services.AddResponseCompression(options => { options.EnableForHttps = true; });
+
+var app = builder.Build();
+
+// ── Development Setup ─────────────────────────────────────────────────────────
+if (app.Environment.IsDevelopment())
+{
+    app.UseOpenApi();
+    app.UseSwaggerUi();
+    await app.InitializeDatabaseAsync();
+}
+
+// ── Middleware Pipeline ───────────────────────────────────────────────────────
+app.UseBuildingBlocks(); 
+app.UseRouting();
+app.UseResponseCompression();
+app.UseStandardHealthChecks();
+app.UseRateLimiter();
+app.UseAuthorization();
+app.MapControllers();
+
+app.Run();
