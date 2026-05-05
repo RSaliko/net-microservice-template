@@ -1,0 +1,38 @@
+# Environment variables (local configuration)
+.env
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Build output
+bin/
+obj/
+dist/
+.next/
+
+# Dependencies
+node_modules/
+packages/
+
+# Logs
+*.log
+logs/
+
+# Testing
+coverage/
+.nyc_output/
+
+# Docker
+.docker/
+
+# Temp files
+*.tmp
+*.bak
+~*
