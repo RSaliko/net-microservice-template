@@ -40,6 +40,30 @@ public class Order : BaseEntity
         Status = OrderStatus.Draft;
     }
 
+    public void Submit()
+    {
+        if (Status != OrderStatus.Draft)
+            throw new InvalidOperationException("Only draft orders can be submitted");
+
+        Status = OrderStatus.Submitted;
+    }
+
+    public void ReserveStock()
+    {
+        if (Status != OrderStatus.Submitted)
+            throw new InvalidOperationException("Order must be submitted before stock can be reserved");
+
+        Status = OrderStatus.StockReserved;
+    }
+
+    public void Cancel()
+    {
+        if (Status == OrderStatus.Cancelled)
+            return;
+
+        Status = OrderStatus.Cancelled;
+    }
+
     public void UpdateDetails(string receiverName, string phone, string email, string note)
     {
         if (Status != OrderStatus.Draft)

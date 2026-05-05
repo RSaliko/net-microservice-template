@@ -52,6 +52,8 @@ public static class DependencyInjection
                 o.UseBusOutbox();
             });
 
+            x.SetKebabCaseEndpointNameFormatter();
+
             // Consumers
             // Scan Infrastructure assembly for consumers
             var infrastructureAssembly = Assembly.Load("ProductService.Infrastructure");

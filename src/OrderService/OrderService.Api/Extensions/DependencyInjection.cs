@@ -87,6 +87,12 @@ public static class DependencyInjection
                 o.UseBusOutbox();
             });
 
+            x.SetKebabCaseEndpointNameFormatter();
+
+            // Scan Infrastructure assembly for consumers
+            var infrastructureAssembly = Assembly.Load("OrderService.Infrastructure");
+            x.AddConsumers(infrastructureAssembly);
+
             var rabbitMqOptions = configuration.GetSection(RabbitMqSettings.SectionName).Get<RabbitMqSettings>() ?? new RabbitMqSettings();
 
             if (environment.IsDevelopment() && string.IsNullOrEmpty(configuration["RabbitMQ:Host"]))

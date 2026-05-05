@@ -37,6 +37,8 @@ public class CreateOrderCommandHandler(IApplicationDbContext context, IPublishEn
             order.AddItem(item.ProductId, item.Quantity, item.UnitPrice);
         }
         
+        order.Submit();
+
         _context.Orders.Add(order);
         
         // BP: Event-driven synchronization via Outbox (must be called BEFORE SaveChangesAsync)
@@ -44,7 +46,8 @@ public class CreateOrderCommandHandler(IApplicationDbContext context, IPublishEn
             order.Id,
             order.OrderCode,
             order.ReceiverName,
-            order.CreatedAt), cancellationToken);
+            order.CreatedAt,
+            order.Items.Select(x => new OrderItemEvent(x.ProductId, x.Quantity)).ToList()), cancellationToken);
 
         await _context.SaveChangesAsync(cancellationToken);
 

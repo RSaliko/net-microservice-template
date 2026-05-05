@@ -73,6 +73,19 @@ public class Product : BaseEntity
         }
     }
 
+    public void DeductStock(int quantity)
+    {
+        if (quantity <= 0) throw new ArgumentOutOfRangeException(nameof(quantity), "Quantity to deduct must be greater than 0");
+        if (QuantityStock < quantity) throw new InvalidOperationException($"Insufficient stock for product {Name}. Requested: {quantity}, Available: {QuantityStock}");
+        
+        QuantityStock -= quantity;
+        
+        if (QuantityStock == 0)
+        {
+            Status = ProductStatus.OutOfStock;
+        }
+    }
+
     public void Activate()
     {
         if (Status == ProductStatus.Discontinued)
