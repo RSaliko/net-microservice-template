@@ -65,9 +65,6 @@ public static class DependencyInjection
                 c.Timeout = TimeSpan.FromSeconds(10);
             });
 
-        var retryPolicy = HttpPolicyExtensions.HandleTransientHttpError()
-            .WaitAndRetryAsync(3, retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)));
-
         services.AddRefitClient<IWeatherApiClient>()
             .ConfigureHttpClient((sp, c) =>
             {
@@ -76,7 +73,7 @@ public static class DependencyInjection
                 c.Timeout = TimeSpan.FromSeconds(10);
             })
             .AddHttpMessageHandler<WeatherApiKeyHandler>()
-            .AddPolicyHandler(retryPolicy);
+            .AddPolicyHandler(BuildingBlocks.Resilience.ResiliencePolicies.GetWaitAndRetryPolicy());
 
         // MassTransit
         services.AddMassTransit(x =>
@@ -114,6 +111,21 @@ public static class DependencyInjection
         {
             options.Title = "OrderService API";
             options.Version = "v1";
+            
+            // BP #5: Load XML documentation for better API docs
+            var assemblies = new[]
+            {
+                Assembly.GetExecutingAssembly(),
+                Assembly.Load("OrderService.Application"),
+                Assembly.Load("OrderService.Domain")
+            };
+
+            /*
+            foreach (var assembly in assemblies)
+            {
+                options.AddXmlDocumentationParameters(assembly);
+            }
+            */
             
             options.AddSecurity("JWT", Enumerable.Empty<string>(), new NSwag.OpenApiSecurityScheme
             {

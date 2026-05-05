@@ -16,16 +16,22 @@ public static partial class ServiceCollectionExtensions
         services.AddExceptionHandler<GlobalExceptionHandler>();
         services.AddProblemDetails();
         
-        // Caching
+        // Caching & Redis
         var redisHost = Environment.GetEnvironmentVariable("REDIS_HOST") ?? "localhost";
         var redisPort = Environment.GetEnvironmentVariable("REDIS_PORT") ?? "6379";
+        var redisConnectionString = $"{redisHost}:{redisPort}";
+
+        services.AddSingleton<StackExchange.Redis.IConnectionMultiplexer>(sp => 
+            StackExchange.Redis.ConnectionMultiplexer.Connect(redisConnectionString));
+
         services.AddStackExchangeRedisCache(options =>
         {
-            options.Configuration = $"{redisHost}:{redisPort}";
+            options.Configuration = redisConnectionString;
             options.InstanceName = "App_";
         });
         
         services.AddScoped<BuildingBlocks.Caching.ICacheService, BuildingBlocks.Caching.CacheService>();
+        services.AddSingleton<BuildingBlocks.Caching.IDistributedLockService, BuildingBlocks.Caching.RedisDistributedLockService>();
         
         // API Behavior
         services.Configure<Microsoft.AspNetCore.Mvc.ApiBehaviorOptions>(options =>
@@ -55,12 +61,26 @@ public static partial class ServiceCollectionExtensions
             });
         });
 
+        // CORS
+        services.AddCors(options =>
+        {
+            options.AddPolicy("DefaultCorsPolicy", builder =>
+            {
+                builder.WithOrigins("http://localhost:4200", "http://localhost:4000")
+                       .AllowAnyMethod()
+                       .AllowAnyHeader()
+                       .AllowCredentials();
+            });
+        });
+
         return services;
     }
 
     public static IApplicationBuilder UseBuildingBlocks(this IApplicationBuilder app)
     {
+        app.UseCors("DefaultCorsPolicy");
         app.UseExceptionHandler();
+        app.UseMiddleware<BuildingBlocks.Middleware.SecurityAuditMiddleware>();
         return app;
     }
 }

@@ -32,16 +32,16 @@ public class OrderServiceDbInitializer(OrderServiceDbContext context) : IDbIniti
 
         var orders = orderFaker.Generate(10);
 
+        var f = new Faker();
         foreach (var order in orders)
         {
-            // Add some items - use single Faker instance for consistent Random
-            var itemCount = order.Faker.Random.Int(1, 3);
+            // Add some items
+            var itemCount = f.Random.Int(1, 3);
             for (int i = 0; i < itemCount; i++)
             {
-                order.AddItem(Guid.NewGuid(), order.Faker.Random.Int(1, 5), (decimal)order.Faker.Random.Double() * 500);
+                order.AddItem(Guid.NewGuid(), f.Random.Int(1, 5), (decimal)f.Random.Double() * 500);
             }
 
-            var f = new Faker();
             order.SetAddress(new Address(
                 f.Address.StreetAddress(),
                 f.Address.City(),

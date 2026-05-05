@@ -2,6 +2,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using OrderService.Application.Common.Interfaces;
 using OrderService.Infrastructure.Clients;
+using OrderService.Infrastructure.Data;
 
 namespace OrderService.Infrastructure;
 
@@ -18,6 +19,8 @@ public static class DependencyInjection
         // External adapters and infrastructure services belong here.
         services.AddScoped<IWeatherQueryService, WeatherQueryService>();
         services.AddTransient<WeatherApiKeyHandler>();
+        
+        services.AddScoped<IOrderRepository, OrderRepository>();
 
         // Example: services.AddScoped<IPaymentGateway, StripePaymentGateway>();
         return services;

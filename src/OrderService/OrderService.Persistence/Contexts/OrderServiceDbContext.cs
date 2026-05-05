@@ -7,7 +7,7 @@ using System.Reflection;
 
 namespace OrderService.Persistence.Contexts;
 
-public class OrderServiceDbContext : BaseDbContext, IApplicationDbContext
+public class OrderServiceDbContext : BaseDbContext, IApplicationDbContext, BuildingBlocks.Data.IUnitOfWork
 {
     public OrderServiceDbContext(DbContextOptions<OrderServiceDbContext> options) : base(options) { }
 
@@ -23,5 +23,10 @@ public class OrderServiceDbContext : BaseDbContext, IApplicationDbContext
         modelBuilder.AddInboxStateEntity();
         modelBuilder.AddOutboxMessageEntity();
         modelBuilder.AddOutboxStateEntity();
+    }
+
+    public Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+    {
+        return base.SaveChangesAsync(cancellationToken);
     }
 }

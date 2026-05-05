@@ -5,7 +5,7 @@ namespace BuildingBlocks.Models;
 
 public abstract class BaseEntity<TId> : ISoftDelete, IAuditEntity
 {
-    public TId Id { get; set; } = default!;
+    public TId Id { get; protected set; } = default!;
     
     // IAuditEntity
     public DateTimeOffset CreatedAt { get; set; }
@@ -18,7 +18,7 @@ public abstract class BaseEntity<TId> : ISoftDelete, IAuditEntity
     public DateTimeOffset? DeletedAt { get; set; }
 
     // Optimistic Concurrency
-    public byte[] RowVersion { get; set; } = [];
+    public byte[] RowVersion { get; private set; } = [];
 
     // Domain Events
     private readonly List<IDomainEvent> _domainEvents = [];

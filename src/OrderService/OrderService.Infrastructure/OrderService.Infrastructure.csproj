@@ -3,6 +3,7 @@
   <ItemGroup>
     <ProjectReference Include="..\OrderService.Application\OrderService.Application.csproj" />
     <ProjectReference Include="..\..\BuildingBlocks\BuildingBlocks.csproj" />
+    <ProjectReference Include="..\OrderService.Persistence\OrderService.Persistence.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -10,20 +10,22 @@ namespace OrderService.UnitTests.Application;
 
 public class CreateOrderCommandHandlerTests
 {
-    private readonly IApplicationDbContext _context;
+    private readonly OrderService.Application.Common.Interfaces.IOrderRepository _orderRepository;
+    private readonly BuildingBlocks.Data.IUnitOfWork _unitOfWork;
     private readonly CreateOrderCommandHandler _handler;
     private readonly Fixture _fixture;
 
     public CreateOrderCommandHandlerTests()
     {
-        _context = Substitute.For<IApplicationDbContext>();
+        _orderRepository = Substitute.For<OrderService.Application.Common.Interfaces.IOrderRepository>();
+        _unitOfWork = Substitute.For<BuildingBlocks.Data.IUnitOfWork>();
         var publishEndpoint = Substitute.For<MassTransit.IPublishEndpoint>();
-        _handler = new CreateOrderCommandHandler(_context, publishEndpoint);
+        _handler = new CreateOrderCommandHandler(_orderRepository, _unitOfWork, publishEndpoint);
         _fixture = new Fixture();
         
-        // Mock DbSet
-        var mockSet = Substitute.For<DbSet<Order>, IQueryable<Order>>();
-        _context.Orders.Returns(mockSet);
+        // Mock repository AddAsync behavior
+        _orderRepository.AddAsync(Arg.Any<Order>(), Arg.Any<CancellationToken>())
+            .Returns(ci => Task.FromResult(ci.ArgAt<Order>(0)));
     }
 
     [Fact]
@@ -38,7 +40,7 @@ public class CreateOrderCommandHandlerTests
 
         // Assert
         result.Should().NotBeEmpty();
-        _context.Orders.Received(1).Add(Arg.Is<Order>(o => o.OrderCode == "ORD-TEST"));
-        await _context.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+        _orderRepository.Received(1).AddAsync(Arg.Is<Order>(o => o.OrderCode == "ORD-TEST"), Arg.Any<CancellationToken>());
+        await _unitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 }

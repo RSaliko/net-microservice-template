@@ -31,6 +31,7 @@ services:
       - MSSQL_HOST=sqlserver
       - MSSQL_PORT=1433
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4317
+      - Jwt__Secret=super_secret_key_for_development_purposes_only_123456
     ports:
       - "5170:8080"
     depends_on:
@@ -54,6 +55,7 @@ services:
       - MSSQL_HOST=sqlserver
       - MSSQL_PORT=1433
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4317
+      - Jwt__Secret=super_secret_key_for_development_purposes_only_123456
     ports:
       - "5084:8080"
     depends_on:

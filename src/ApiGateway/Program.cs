@@ -38,6 +38,18 @@ builder.Services
         failureStatus: Microsoft.Extensions.Diagnostics.HealthChecks.HealthStatus.Degraded,
         timeout: TimeSpan.FromSeconds(5));
 
+// ── CORS (FE Integration) ──────────────────────────────────────────────────
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("DefaultCorsPolicy", policy =>
+    {
+        policy.WithOrigins("http://localhost:4200", "http://localhost:4000")
+               .AllowAnyMethod()
+               .AllowAnyHeader()
+               .AllowCredentials();
+    });
+});
+
 // ── Rate Limiting (Global) ────────────────────────────────────────────────────
 builder.Services.AddRateLimiter(options =>
 {
@@ -83,6 +95,7 @@ if (app.Environment.IsDevelopment())
 }
 
 // ── Middleware Pipeline ───────────────────────────────────────────────────────
+app.UseCors("DefaultCorsPolicy");
 app.UseRouting();
 app.UseRequestTimeouts();
 app.UseRateLimiter();

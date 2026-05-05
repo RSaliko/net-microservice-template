@@ -7,17 +7,13 @@ namespace ProductService.Application.Features.Products.Commands.DeactivateAllPro
 
 public record DeactivateAllProductsCommand : IRequest<int>;
 
-public class DeactivateAllProductsCommandHandler(IApplicationDbContext context) 
+public class DeactivateAllProductsCommandHandler(IProductRepository productRepository) 
     : IRequestHandler<DeactivateAllProductsCommand, int>
 {
     public async Task<int> Handle(DeactivateAllProductsCommand request, CancellationToken cancellationToken)
     {
-        // Rule: Use Bulk Operations for high performance (ExecuteUpdate)
-        var affectedRows = await context.Products
-            .Where(j => j.Status == ProductStatus.Active)
-            .ExecuteUpdateAsync(setters => setters
-                .SetProperty(j => j.Status, ProductStatus.Inactive), 
-                cancellationToken);
+        // Rule: Use Bulk Operations for high performance (ExecuteUpdate) via repository
+        var affectedRows = await productRepository.DeactivateAllActiveAsync(cancellationToken);
 
         return affectedRows;
     }

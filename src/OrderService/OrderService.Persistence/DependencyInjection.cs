@@ -32,6 +32,7 @@ public static class DependencyInjection
         services.AddAppDbContext<OrderServiceDbContext>(connectionString);
 
         services.AddScoped<IApplicationDbContext>(sp => sp.GetRequiredService<OrderServiceDbContext>());
+        services.AddScoped<BuildingBlocks.Data.IUnitOfWork>(sp => sp.GetRequiredService<OrderServiceDbContext>());
         services.AddScoped<BuildingBlocks.Data.IDbInitializer, OrderServiceDbInitializer>();
 
         return services;

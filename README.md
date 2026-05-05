@@ -8,6 +8,14 @@ This repository provides a robust foundation for building scalable microservices
 
 The template ships with an API Gateway, two sample services, shared building blocks, SQL Server, RabbitMQ, Redis, and Jaeger for local end-to-end validation.
 
+## 🌐 Frontend Integration
+
+This backend ecosystem is optimized for our [Angular Project Template](https://github.com/sonnguyen130504/angular-project-template).
+
+- **CORS Policy**: Pre-configured in `BuildingBlocks` and `ApiGateway` to allow `localhost:4000` and `localhost:4200`.
+- **Response Format**: All endpoints return `ApiResponse<T>`, matching the frontend's Zod validation schemas.
+- **Gateway**: The YARP Gateway (`localhost:3000`) acts as the single point of entry for the UI.
+
 ## 🛠 Tech Stack
 
 - **Core**: .NET 10
@@ -60,15 +68,15 @@ docker compose up -d --build
 
 ## 🔗 Local Endpoints
 
-| Service | URL |
-| --- | --- |
-| API Gateway | http://localhost:3000 |
-| Product Service API | http://localhost:5170 |
-| Product Service Swagger | http://localhost:5170/swagger |
-| Order Service API | http://localhost:5084 |
-| Order Service Swagger | http://localhost:5084/swagger |
-| RabbitMQ Management | http://localhost:15672 (guest/guest) |
-| Jaeger UI | http://localhost:16686 |
+| Service                 | URL                                  |
+| ----------------------- | ------------------------------------ |
+| API Gateway             | http://localhost:3000                |
+| Product Service API     | http://localhost:5170                |
+| Product Service Swagger | http://localhost:5170/swagger        |
+| Order Service API       | http://localhost:5084                |
+| Order Service Swagger   | http://localhost:5084/swagger        |
+| RabbitMQ Management     | http://localhost:15672 (guest/guest) |
+| Jaeger UI               | http://localhost:16686               |
 
 ## ✅ Quick Verification
 
@@ -93,33 +101,33 @@ src/
 graph TB
     Client[Client/Browser]
     Gateway[API Gateway<br/>Port 3000]
-    
+
     OrderService[Order Service<br/>Port 5084]
     ProductService[Product Service<br/>Port 5170]
-    
+
     OrderDB[(Order DB<br/>SQL Server)]
     ProductDB[(Product DB<br/>SQL Server)]
-    
+
     RabbitMQ[RabbitMQ<br/>Message Broker]
     Redis[Redis Cache]
     Jaeger[Jaeger<br/>Tracing]
-    
+
     Client -->|HTTP/REST| Gateway
     Gateway -->|Route| OrderService
     Gateway -->|Route| ProductService
-    
+
     OrderService -->|Read/Write| OrderDB
     ProductService -->|Read/Write| ProductDB
-    
+
     OrderService -->|Publish Events| RabbitMQ
     ProductService -->|Subscribe Events| RabbitMQ
-    
+
     ProductService -->|Cache| Redis
     OrderService -->|Cache| Redis
-    
+
     OrderService -->|Trace| Jaeger
     ProductService -->|Trace| Jaeger
-    
+
     style Gateway fill:#4A90E2
     style OrderService fill:#7ED321
     style ProductService fill:#7ED321
@@ -140,18 +148,18 @@ sequenceDiagram
     participant ProductSvc as Product Service
     participant ProductDB as Product DB
     participant Redis
-    
+
     Client->>Gateway: POST /orders
     Gateway->>OrderSvc: Route Request
     OrderSvc->>OrderDB: Save Order + Outbox Message
     OrderSvc->>RabbitMQ: Publish OrderCreatedEvent
     OrderSvc-->>Gateway: Return 201 + Order ID
     Gateway-->>Client: Response
-    
+
     RabbitMQ->>ProductSvc: Deliver Event
     ProductSvc->>ProductDB: Create Product
     ProductSvc->>Redis: Warm Cache
-    
+
     Client->>Gateway: GET /products/{id}
     Gateway->>ProductSvc: Route Request
     ProductSvc->>Redis: Check Cache
@@ -163,6 +171,7 @@ sequenceDiagram
 ## 📜 Best Practices
 
 This template strictly follows the **TicketFlow Backend Best Practices** (included in the `docs` folder). Key highlights:
+
 - **Primary Constructor Records**: Modern C# 12 features for immutability.
 - **Slim Controllers**: Only coordinate with MediatR.
 - **Database-level Projections**: Optimize performance with IQueryable mapping.
@@ -180,3 +189,4 @@ We warmly welcome contributions to this template! Whether it's fixing bugs, impr
 ## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
