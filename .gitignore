@@ -90,3 +90,8 @@ dump.rdb
 .versionrc
 package-lock.json
 yarn.lock
+
+# Build & Temporary Local Keys
+publish/
+.aspnet/
+keys/
