@@ -1,7 +1,9 @@
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using System.Collections.Generic;
 using Testcontainers.MsSql;
 using Testcontainers.RabbitMq;
 using Xunit;
@@ -31,6 +33,16 @@ public abstract class BaseIntegrationTest<TProgram, TDbContext> : IAsyncLifetime
         Factory = new WebApplicationFactory<TProgram>()
             .WithWebHostBuilder(builder =>
             {
+                builder.ConfigureAppConfiguration((_, config) =>
+                {
+                    config.AddInMemoryCollection(new Dictionary<string, string?>
+                    {
+                        ["Jwt:Secret"] = "integration-test-secret-key-1234567890",
+                        ["Jwt:Issuer"] = "TicketFlow",
+                        ["Jwt:Audience"] = "TicketFlowUI"
+                    });
+                });
+
                 builder.ConfigureServices(services =>
                 {
                     // Remove existing DB context registration
