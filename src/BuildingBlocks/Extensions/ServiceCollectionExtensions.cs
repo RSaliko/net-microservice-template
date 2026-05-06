@@ -80,6 +80,8 @@ public static partial class ServiceCollectionExtensions
     {
         app.UseCors("DefaultCorsPolicy");
         app.UseExceptionHandler();
+        app.UseMiddleware<BuildingBlocks.Middleware.SecurityHeadersMiddleware>();
+        app.UseMiddleware<BuildingBlocks.Middleware.ETagMiddleware>();
         app.UseMiddleware<BuildingBlocks.Middleware.SecurityAuditMiddleware>();
         return app;
     }

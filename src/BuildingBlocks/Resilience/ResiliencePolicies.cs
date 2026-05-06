@@ -27,4 +27,18 @@ public static class ResiliencePolicies
         return HttpPolicyExtensions.HandleTransientHttpError()
             .CircuitBreakerAsync(handledEventsAllowedBeforeBreaking, TimeSpan.FromSeconds(durationOfBreakInSeconds));
     }
+
+    /// <summary>
+    /// BP #37: Database Retry Policy for Deadlocks and Transient Failures.
+    /// Specific to PostgreSQL (40P01 = Deadlock).
+    /// </summary>
+    public static IAsyncPolicy GetDatabaseRetryPolicy(int retryCount = 3)
+    {
+        return Policy
+            .Handle<Npgsql.NpgsqlException>(ex => ex.SqlState == "40P01") // Deadlock detected
+            .Or<Microsoft.EntityFrameworkCore.DbUpdateConcurrencyException>()
+            .WaitAndRetryAsync(retryCount, retryAttempt => 
+                TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)) 
+                + TimeSpan.FromMilliseconds(new Random().Next(0, 100)));
+    }
 }

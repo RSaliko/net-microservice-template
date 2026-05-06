@@ -1,16 +1,17 @@
 using Microsoft.AspNetCore.RateLimiting;
 using System.Threading.RateLimiting;
 using Serilog;
+using Microsoft.AspNetCore.DataProtection;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // ── Serilog Structured Logging ────────────────────────────────────────────────
+builder.Logging.ClearProviders();
 builder.Host.UseSerilog((context, services, configuration) => configuration
     .ReadFrom.Configuration(context.Configuration)
     .ReadFrom.Services(services)
     .Enrich.FromLogContext()
-    .Enrich.WithProperty("Service", "ApiGateway")
-    .WriteTo.Console());
+    .Enrich.WithProperty("Service", "ApiGateway"));
 
 // ── Graceful Shutdown ─────────────────────────────────────────────────────────
 builder.Services.Configure<HostOptions>(options =>
@@ -18,11 +19,18 @@ builder.Services.Configure<HostOptions>(options =>
     options.ShutdownTimeout = TimeSpan.FromSeconds(30);
 });
 
+// ── Data Protection (Persistent Keys) ─────────────────────────────────────────
+builder.Services.AddDataProtection()
+    .PersistKeysToFileSystem(new DirectoryInfo(Path.Combine(builder.Environment.ContentRootPath, "keys")));
+
 // ── YARP Reverse Proxy ────────────────────────────────────────────────────────
 builder.Services.AddReverseProxy()
     .LoadFromConfig(builder.Configuration.GetSection("ReverseProxy"));
 
 builder.Services.AddRequestTimeouts();
+
+// ── Performance & Compression ─────────────────────────────────────────────────
+builder.Services.AddResponseCompression(options => { options.EnableForHttps = true; });
 
 // ── Health Checks ─────────────────────────────────────────────────────────────
 builder.Services
@@ -97,6 +105,7 @@ if (app.Environment.IsDevelopment())
 // ── Middleware Pipeline ───────────────────────────────────────────────────────
 app.UseCors("DefaultCorsPolicy");
 app.UseRouting();
+app.UseResponseCompression();
 app.UseRequestTimeouts();
 app.UseRateLimiter();
 
