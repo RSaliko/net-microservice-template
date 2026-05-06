@@ -16,6 +16,9 @@ public static class HealthCheckExtensions
         if (!string.IsNullOrEmpty(rabbitMqHost))
             builder.AddRabbitMQ($"amqp://guest:guest@{rabbitMqHost}", null, "rabbitmq");
 
+        var redisHost = Environment.GetEnvironmentVariable("REDIS_HOST") ?? "localhost";
+        builder.AddRedis($"{redisHost}:6379", "redis");
+
         return services;
     }
 

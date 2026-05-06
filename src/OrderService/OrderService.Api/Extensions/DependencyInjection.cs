@@ -121,7 +121,7 @@ public static class DependencyInjection
             options.Title = "OrderService API";
             options.Version = "v1";
             
-            // BP #5: Load XML documentation for better API docs
+            // BP #4: Load XML documentation for better API docs
             var assemblies = new[]
             {
                 Assembly.GetExecutingAssembly(),
@@ -129,12 +129,10 @@ public static class DependencyInjection
                 Assembly.Load("OrderService.Domain")
             };
 
-            /*
             foreach (var assembly in assemblies)
             {
                 options.AddXmlDocumentationParameters(assembly);
             }
-            */
             
             options.AddSecurity("JWT", Enumerable.Empty<string>(), new NSwag.OpenApiSecurityScheme
             {
