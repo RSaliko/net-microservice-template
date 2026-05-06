@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.AspNetCore.RateLimiting;
 
 namespace BuildingBlocks.Extensions;
@@ -31,7 +32,9 @@ public static partial class ServiceCollectionExtensions
         });
         
         services.AddScoped<BuildingBlocks.Caching.ICacheService, BuildingBlocks.Caching.CacheService>();
-        services.AddSingleton<BuildingBlocks.Caching.IDistributedLockService, BuildingBlocks.Caching.RedisDistributedLockService>();
+        services.AddSingleton<BuildingBlocks.Caching.IDistributedLockService, BuildingBlocks.Caching.RedLockDistributedLockService>();
+        services.AddSingleton<BuildingBlocks.Security.IEncryptionService, BuildingBlocks.Security.AesEncryptionService>();
+        services.TryAddSingleton<BuildingBlocks.Security.ISecretProvider, BuildingBlocks.Security.ConfigurationSecretProvider>();
         
         // API Behavior
         services.Configure<Microsoft.AspNetCore.Mvc.ApiBehaviorOptions>(options =>

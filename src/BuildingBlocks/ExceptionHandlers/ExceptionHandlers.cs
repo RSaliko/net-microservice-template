@@ -17,7 +17,7 @@ public class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logger) : IE
         var (statusCode, message, errorCode) = exception switch
         {
             BusinessException busEx => (busEx.StatusCode, busEx.Message, busEx.ErrorCode),
-            _ => (500, "An internal server error occurred.", "SYS_INTERNAL_ERROR")
+            _ => (500, "An internal server error occurred.", BuildingBlocks.Common.ErrorCodes.System.InternalError)
         };
 
         var response = new ApiResponse(statusCode, message, null, errorCode);
@@ -49,7 +49,7 @@ public class ValidationExceptionHandler(ILogger<ValidationExceptionHandler> logg
                     g => g.Select(e => e.ErrorMessage).ToArray()
                 );
 
-            var response = new ApiResponse(400, "Validation Failed", errors, "VAL_VALIDATION_FAILED");
+            var response = new ApiResponse(400, "Validation Failed", errors, BuildingBlocks.Common.ErrorCodes.Validation.GeneralFailure);
             
             httpContext.Response.StatusCode = 400;
             await httpContext.Response.WriteAsJsonAsync(response, cancellationToken).ConfigureAwait(false);

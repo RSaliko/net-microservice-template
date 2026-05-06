@@ -42,4 +42,10 @@ public abstract class BaseDbContext : DbContext
             }
         }
     }
+
+    public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+    {
+        var retryPolicy = BuildingBlocks.Resilience.ResiliencePolicies.GetDatabaseRetryPolicy();
+        return await retryPolicy.ExecuteAsync(() => base.SaveChangesAsync(cancellationToken));
+    }
 }

@@ -15,11 +15,11 @@ public class RedisDistributedLockService : IDistributedLockService
 
     public async Task<bool> AcquireLockAsync(string key, string value, TimeSpan expiration, CancellationToken cancellationToken = default)
     {
-        return await _db.LockTakeAsync(key, value, expiration);
+        return await _db.LockTakeAsync(key, value, expiration).ConfigureAwait(false);
     }
 
     public async Task ReleaseLockAsync(string key, string value, CancellationToken cancellationToken = default)
     {
-        await _db.LockReleaseAsync(key, value);
+        await _db.LockReleaseAsync(key, value).ConfigureAwait(false);
     }
 }

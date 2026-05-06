@@ -12,6 +12,7 @@ namespace BuildingBlocks.Controllers;
 [ApiController]
 [ApiVersion("1.0")]
 [Route("api/v{version:apiVersion}/[controller]")]
+[Microsoft.AspNetCore.RateLimiting.EnableRateLimiting("fixed")]
 public abstract class BaseApiController : ControllerBase
 {
     private IMediator? _mediator;

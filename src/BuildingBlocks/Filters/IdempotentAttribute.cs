@@ -2,6 +2,7 @@ using BuildingBlocks.Caching;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace BuildingBlocks.Filters;
 
@@ -16,6 +17,7 @@ public class IdempotentAttribute : Attribute, IAsyncActionFilter
             return;
         }
 
+        var logger = context.HttpContext.RequestServices.GetRequiredService<Microsoft.Extensions.Logging.ILogger<IdempotentAttribute>>();
         var cacheService = context.HttpContext.RequestServices.GetRequiredService<ICacheService>();
         var cacheKey = $"idempotency:{idempotencyKey}";
 
@@ -24,15 +26,18 @@ public class IdempotentAttribute : Attribute, IAsyncActionFilter
         {
             if (cachedResult.Status == "processing")
             {
+                logger.LogWarning("Idempotency conflict: Request with key {IdempotencyKey} is already being processed.", idempotencyKey);
                 context.Result = new ConflictObjectResult(new { message = "Request is currently being processed." });
                 return;
             }
 
+            logger.LogInformation("Idempotency hit: Returning cached result for key {IdempotencyKey}.", idempotencyKey);
             context.Result = new ObjectResult(cachedResult.Data) { StatusCode = cachedResult.StatusCode };
             return;
         }
 
         // Mark as processing
+        logger.LogDebug("Idempotency miss: Marking key {IdempotencyKey} as processing.", idempotencyKey);
         await cacheService.SetAsync(cacheKey, new IdempotentResponse { Status = "processing" }, TimeSpan.FromMinutes(5));
 
         var executedContext = await next();

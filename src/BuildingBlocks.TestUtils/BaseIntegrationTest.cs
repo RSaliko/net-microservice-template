@@ -4,18 +4,22 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using System.Collections.Generic;
-using Testcontainers.MsSql;
+using Testcontainers.PostgreSql;
 using Testcontainers.RabbitMq;
 using Xunit;
 
 namespace BuildingBlocks.TestUtils;
 
+/// <summary>
+/// BP #12: Base class for integration tests using Testcontainers (PostgreSQL + RabbitMQ).
+/// Each test class gets isolated, real infrastructure containers.
+/// </summary>
 public abstract class BaseIntegrationTest<TProgram, TDbContext> : IAsyncLifetime
     where TProgram : class
     where TDbContext : DbContext
 {
-    protected readonly MsSqlContainer MsSqlContainer = new MsSqlBuilder()
-        .WithImage("mcr.microsoft.com/mssql/server:2022-latest")
+    protected readonly PostgreSqlContainer PostgreSqlContainer = new PostgreSqlBuilder()
+        .WithImage("postgres:16-alpine")
         .Build();
 
     protected readonly RabbitMqContainer RabbitMqContainer = new RabbitMqBuilder()
@@ -28,7 +32,7 @@ public abstract class BaseIntegrationTest<TProgram, TDbContext> : IAsyncLifetime
 
     public virtual async Task InitializeAsync()
     {
-        await Task.WhenAll(MsSqlContainer.StartAsync(), RabbitMqContainer.StartAsync());
+        await Task.WhenAll(PostgreSqlContainer.StartAsync(), RabbitMqContainer.StartAsync());
 
         Factory = new WebApplicationFactory<TProgram>()
             .WithWebHostBuilder(builder =>
@@ -37,9 +41,7 @@ public abstract class BaseIntegrationTest<TProgram, TDbContext> : IAsyncLifetime
                 {
                     config.AddInMemoryCollection(new Dictionary<string, string?>
                     {
-                        ["Jwt:Secret"] = "integration-test-secret-key-1234567890",
-                        ["Jwt:Issuer"] = "TicketFlow",
-                        ["Jwt:Audience"] = "TicketFlowUI"
+                        ["RabbitMQ:Host"] = RabbitMqContainer.GetConnectionString()
                     });
                 });
 
@@ -49,12 +51,9 @@ public abstract class BaseIntegrationTest<TProgram, TDbContext> : IAsyncLifetime
                     services.RemoveAll(typeof(DbContextOptions<TDbContext>));
                     services.RemoveAll(typeof(TDbContext));
 
-                    // Add DB context using Testcontainer connection string
+                    // Add DB context using PostgreSQL Testcontainer
                     services.AddDbContext<TDbContext>(options =>
-                        options.UseSqlServer(MsSqlContainer.GetConnectionString()));
-
-                    // RabbitMQ override would happen here if we used a standard configuration pattern
-                    // For now, we assume the host can be overridden via environment variables or options
+                        options.UseNpgsql(PostgreSqlContainer.GetConnectionString()));
                 });
             });
 
@@ -68,6 +67,6 @@ public abstract class BaseIntegrationTest<TProgram, TDbContext> : IAsyncLifetime
     {
         Scope.Dispose();
         await Factory.DisposeAsync();
-        await Task.WhenAll(MsSqlContainer.DisposeAsync().AsTask(), RabbitMqContainer.DisposeAsync().AsTask());
+        await Task.WhenAll(PostgreSqlContainer.DisposeAsync().AsTask(), RabbitMqContainer.DisposeAsync().AsTask());
     }
 }

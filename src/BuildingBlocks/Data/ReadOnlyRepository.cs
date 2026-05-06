@@ -3,10 +3,16 @@ using Microsoft.EntityFrameworkCore;
 
 namespace BuildingBlocks.Data;
 
-public abstract class ReadOnlyRepository<T, TId>(DbContext context) : IReadOnlyRepository<T, TId> where T : class
+public abstract class ReadOnlyRepository<T, TId> : IReadOnlyRepository<T, TId> where T : class
 {
-    protected readonly DbContext Context = context;
-    protected readonly DbSet<T> DbSet = context.Set<T>();
+    protected readonly DbContext Context;
+    protected readonly DbSet<T> DbSet;
+
+    protected ReadOnlyRepository([Microsoft.Extensions.DependencyInjection.FromKeyedServices("readonly")] DbContext context)
+    {
+        Context = context;
+        DbSet = context.Set<T>();
+    }
 
     public virtual async Task<T?> FindByIdAsync(TId id, CancellationToken cancellationToken = default)
     {

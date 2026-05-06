@@ -38,7 +38,8 @@ public static class OpenTelemetryExtensions
                     .AddAspNetCoreInstrumentation()
                     .AddHttpClientInstrumentation()
                     .AddEntityFrameworkCoreInstrumentation()
-                    .AddSource(serviceName) // Custom spans
+                    .AddSource(serviceName) // Service specific spans
+                    .AddSource(BuildingBlocks.Observability.TracingConstants.SourceName) // Shared spans
                     .AddOtlpExporter();
             })
             .WithMetrics(metrics =>

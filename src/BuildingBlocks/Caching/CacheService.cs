@@ -15,7 +15,7 @@ public class CacheService(IDistributedCache cache) : ICacheService
 {
     public async Task<T?> GetAsync<T>(string key, CancellationToken cancellationToken = default)
     {
-        var cachedValue = await cache.GetStringAsync(key, cancellationToken);
+        var cachedValue = await cache.GetStringAsync(key, cancellationToken).ConfigureAwait(false);
         if (string.IsNullOrEmpty(cachedValue))
             return default;
 
@@ -38,11 +38,11 @@ public class CacheService(IDistributedCache cache) : ICacheService
         };
 
         var serializedValue = JsonSerializer.Serialize(value);
-        await cache.SetStringAsync(key, serializedValue, options, cancellationToken);
+        await cache.SetStringAsync(key, serializedValue, options, cancellationToken).ConfigureAwait(false);
     }
 
     public async Task RemoveAsync(string key, CancellationToken cancellationToken = default)
     {
-        await cache.RemoveAsync(key, cancellationToken);
+        await cache.RemoveAsync(key, cancellationToken).ConfigureAwait(false);
     }
 }
