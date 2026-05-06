@@ -90,6 +90,7 @@ dump.rdb
 .versionrc
 package-lock.json
 yarn.lock
+COMPREHENSIVE_AUDIT.md
 
 # Build & Temporary Local Keys
 publish/
