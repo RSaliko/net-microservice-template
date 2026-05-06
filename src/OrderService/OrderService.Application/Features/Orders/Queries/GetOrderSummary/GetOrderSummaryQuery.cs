@@ -1,6 +1,6 @@
 using System.Diagnostics;
+using BuildingBlocks.Observability;
 using BuildingBlocks.Caching;
-using BuildingBlocks.Common;
 using MediatR;
 using OrderService.Application.Clients;
 using OrderService.Application.Features.Orders.DTOs;
@@ -15,7 +15,7 @@ public class GetOrderSummaryQueryHandler(IProductServiceClient productServiceCli
 {
     public async Task<OrderSummaryDto> Handle(GetOrderSummaryQuery request, CancellationToken cancellationToken)
     {
-        using var activity = TelemetryConstants.ActivitySource.StartActivity("GetOrderSummary");
+        using var activity = TracingConstants.ActivitySource.StartActivity("GetOrderSummary");
         activity?.SetTag("order.source", "OrderService");
 
         const string cacheKey = "products_summary";

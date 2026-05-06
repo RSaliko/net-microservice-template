@@ -28,8 +28,11 @@ public static class DependencyInjection
             throw new InvalidOperationException("Connection string 'DefaultConnection' is not configured.");
         }
 
-        // BP: Standardized registration with Interceptors (Audit, Domain Events)
-        services.AddAppDbContext<OrderServiceDbContext>(connectionString);
+        var writeConnection = connectionString;
+        var readConnection = configuration.GetConnectionString("ReplicaConnection") ?? writeConnection;
+
+        // BP: Standardized registration with Interceptors (Audit, Domain Events) and Read-Write Splitting
+        services.AddReadWriteDbContext<OrderServiceDbContext>(writeConnection, readConnection);
 
         services.AddScoped<IApplicationDbContext>(sp => sp.GetRequiredService<OrderServiceDbContext>());
         services.AddScoped<BuildingBlocks.Data.IUnitOfWork>(sp => sp.GetRequiredService<OrderServiceDbContext>());

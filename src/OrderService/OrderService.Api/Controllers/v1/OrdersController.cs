@@ -7,15 +7,12 @@ using OrderService.Application.Features.Orders.DTOs;
 using OrderService.Application.Features.Orders.Commands.CreateOrder;
 using OrderService.Application.Features.Orders.Queries.GetOrderSummary;
 
-using Microsoft.AspNetCore.Authorization;
-
 namespace OrderService.Api.Controllers.v1;
 
 /// <summary>
 /// Controller for managing orders and demonstrating cross-service integration.
 /// </summary>
-// [Authorize]
-public class OrdersController : BaseApiController
+public sealed class OrdersController : BaseApiController
 {
     /// <summary>
     /// Gets a summary of orders with product details.
@@ -42,6 +39,7 @@ public class OrdersController : BaseApiController
     [Idempotent]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status409Conflict)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> Create([FromBody] CreateOrderCommand command, CancellationToken cancellationToken)
     {

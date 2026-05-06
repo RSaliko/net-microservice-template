@@ -1,4 +1,6 @@
 using System.IO;
+using System.IO.Compression;
+using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.AspNetCore.DataProtection;
 using BuildingBlocks.Conventions;
 using BuildingBlocks.Extensions;
@@ -39,7 +41,6 @@ builder.Services.AddApiServices(builder.Configuration, builder.Environment);
 
 builder.Services.AddBuildingBlocks(builder.Configuration);
 builder.Services.AddOpenTelemetryObservability(builder.Configuration, "OrderService");
-builder.Services.AddJwtAuthentication(builder.Configuration);
 
 // ── API Controllers ───────────────────────────────────────────────────────────
 builder.Services.AddControllers(options =>
@@ -49,7 +50,14 @@ builder.Services.AddControllers(options =>
 .AddNewtonsoftJson();
 
 // ── Performance & Compression ─────────────────────────────────────────────────
-builder.Services.AddResponseCompression(options => { options.EnableForHttps = true; });
+builder.Services.AddResponseCompression(options =>
+{
+    options.EnableForHttps = true;
+    options.Providers.Add<Microsoft.AspNetCore.ResponseCompression.BrotliCompressionProvider>();
+    options.Providers.Add<Microsoft.AspNetCore.ResponseCompression.GzipCompressionProvider>();
+});
+builder.Services.Configure<BrotliCompressionProviderOptions>(options => options.Level = CompressionLevel.Fastest);
+builder.Services.Configure<GzipCompressionProviderOptions>(options => options.Level = CompressionLevel.SmallestSize);
 
 var app = builder.Build();
 
@@ -67,7 +75,6 @@ app.UseRouting();
 app.UseResponseCompression();
 app.UseStandardHealthChecks();
 app.UseRateLimiter();
-app.UseAuthorization();
 app.MapControllers();
 
 app.Run();

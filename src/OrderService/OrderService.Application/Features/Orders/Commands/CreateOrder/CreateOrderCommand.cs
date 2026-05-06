@@ -27,6 +27,11 @@ public class CreateOrderCommandHandler(
 {
     public async Task<Guid> Handle(CreateOrderCommand request, CancellationToken cancellationToken)
     {
+        // BP #23: Advanced Distributed Tracing - Manual Span with Business Tags
+        using var activity = BuildingBlocks.Observability.TracingConstants.ActivitySource.StartActivity("CreateOrder");
+        activity?.SetTag("order.code", request.OrderCode);
+        activity?.SetTag("order.item_count", request.Items.Count);
+        activity?.SetTag("order.receiver", request.ReceiverName);
         // BP #15: Distributed Lock to prevent duplicate submissions for the same OrderCode
         var lockKey = $"lock:order:{request.OrderCode}";
         var lockValue = Guid.NewGuid().ToString();

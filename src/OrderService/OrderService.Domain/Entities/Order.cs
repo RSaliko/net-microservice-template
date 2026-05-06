@@ -1,3 +1,4 @@
+using BuildingBlocks.Domain;
 using BuildingBlocks.Models;
 using OrderService.Domain.Enums;
 using OrderService.Domain.ValueObjects;
@@ -5,7 +6,7 @@ using System.Text.RegularExpressions;
 
 namespace OrderService.Domain.Entities;
 
-public class Order : BaseEntity
+public class Order : BaseEntity, IAggregateRoot
 {
     private static readonly Regex OrderCodeRegex = new("^[A-Z0-9-]{4,32}$", RegexOptions.Compiled);
     private const int MaxOrderCodeLength = 32;

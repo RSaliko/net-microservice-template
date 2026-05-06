@@ -21,6 +21,8 @@ public static class DependencyInjection
         services.AddTransient<WeatherApiKeyHandler>();
         
         services.AddScoped<IOrderRepository, OrderRepository>();
+        services.AddScoped<OrderService.Domain.Repositories.IOrderReadOnlyRepository, OrderService.Persistence.Repositories.OrderReadOnlyRepository>();
+        services.AddHostedService<OrderService.Infrastructure.BackgroundJobs.OrderReconciliationWorker>();
 
         // Example: services.AddScoped<IPaymentGateway, StripePaymentGateway>();
         return services;

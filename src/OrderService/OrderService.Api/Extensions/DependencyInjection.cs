@@ -67,7 +67,9 @@ public static class DependencyInjection
             {
                 MaxConnectionsPerServer = 20, // BP #37: Bulkheading
                 PooledConnectionLifetime = TimeSpan.FromMinutes(5)
-            });
+            })
+            .AddPolicyHandler(BuildingBlocks.Resilience.ResiliencePolicies.GetWaitAndRetryPolicy())
+            .AddPolicyHandler(BuildingBlocks.Resilience.ResiliencePolicies.GetCircuitBreakerPolicy());
 
         services.AddRefitClient<IWeatherApiClient>()
             .ConfigureHttpClient((sp, c) =>
@@ -82,7 +84,8 @@ public static class DependencyInjection
                 PooledConnectionLifetime = TimeSpan.FromMinutes(2)
             })
             .AddHttpMessageHandler<WeatherApiKeyHandler>()
-            .AddPolicyHandler(BuildingBlocks.Resilience.ResiliencePolicies.GetWaitAndRetryPolicy());
+            .AddPolicyHandler(BuildingBlocks.Resilience.ResiliencePolicies.GetWaitAndRetryPolicy())
+            .AddPolicyHandler(BuildingBlocks.Resilience.ResiliencePolicies.GetCircuitBreakerPolicy());
 
         // MassTransit
         services.AddMassTransit(x =>
@@ -101,15 +104,27 @@ public static class DependencyInjection
 
             var rabbitMqOptions = configuration.GetSection(RabbitMqSettings.SectionName).Get<RabbitMqSettings>() ?? new RabbitMqSettings();
 
+            x.AddConfigureEndpointsCallback((context, name, cfg) =>
+            {
+                cfg.UseEntityFrameworkOutbox<OrderServiceDbContext>(context);
+            });
+
             if (environment.IsDevelopment() && string.IsNullOrEmpty(configuration["RabbitMQ:Host"]))
             {
-                x.UsingInMemory((context, cfg) => cfg.ConfigureEndpoints(context));
+                x.UsingInMemory((context, cfg) =>
+                {
+                    // BP #16: Exponential retry for transient failures
+                    cfg.UseMessageRetry(r => r.Exponential(3, TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(2)));
+                    cfg.ConfigureEndpoints(context);
+                });
             }
             else
             {
                 x.UsingRabbitMq((context, cfg) =>
                 {
                     cfg.Host(rabbitMqOptions.Host);
+                    // BP #16: Exponential retry for transient failures
+                    cfg.UseMessageRetry(r => r.Exponential(3, TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(2)));
                     cfg.ConfigureEndpoints(context);
                 });
             }
@@ -121,29 +136,6 @@ public static class DependencyInjection
             options.Title = "OrderService API";
             options.Version = "v1";
             
-            // BP #4: Load XML documentation for better API docs
-            var assemblies = new[]
-            {
-                Assembly.GetExecutingAssembly(),
-                Assembly.Load("OrderService.Application"),
-                Assembly.Load("OrderService.Domain")
-            };
-
-            foreach (var assembly in assemblies)
-            {
-                options.AddXmlDocumentationParameters(assembly);
-            }
-            
-            options.AddSecurity("JWT", Enumerable.Empty<string>(), new NSwag.OpenApiSecurityScheme
-            {
-                Type = NSwag.OpenApiSecuritySchemeType.ApiKey,
-                Name = "Authorization",
-                In = NSwag.OpenApiSecurityApiKeyLocation.Header,
-                Description = "Type into the textbox: Bearer {your JWT token}."
-            });
-
-            options.OperationProcessors.Add(
-                new NSwag.Generation.Processors.Security.AspNetCoreOperationSecurityScopeProcessor("JWT"));
         });
 
         return services;

@@ -5,6 +5,7 @@ using NSubstitute;
 using OrderService.Application.Common.Interfaces;
 using OrderService.Application.Features.Orders.Commands.CreateOrder;
 using OrderService.Domain.Entities;
+using BuildingBlocks.Caching;
 
 namespace OrderService.UnitTests.Application;
 
@@ -20,7 +21,13 @@ public class CreateOrderCommandHandlerTests
         _orderRepository = Substitute.For<OrderService.Application.Common.Interfaces.IOrderRepository>();
         _unitOfWork = Substitute.For<BuildingBlocks.Data.IUnitOfWork>();
         var publishEndpoint = Substitute.For<MassTransit.IPublishEndpoint>();
-        _handler = new CreateOrderCommandHandler(_orderRepository, _unitOfWork, publishEndpoint);
+        var lockService = Substitute.For<IDistributedLockService>();
+        
+        // Mock lock service to succeed
+        lockService.AcquireLockAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<TimeSpan>(), Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(true));
+        
+        _handler = new CreateOrderCommandHandler(_orderRepository, _unitOfWork, publishEndpoint, lockService);
         _fixture = new Fixture();
         
         // Mock repository AddAsync behavior

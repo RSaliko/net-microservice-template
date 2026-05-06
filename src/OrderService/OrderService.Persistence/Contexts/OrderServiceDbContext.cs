@@ -7,9 +7,11 @@ using System.Reflection;
 
 namespace OrderService.Persistence.Contexts;
 
-public class OrderServiceDbContext : BaseDbContext, IApplicationDbContext, BuildingBlocks.Data.IUnitOfWork
+public class OrderServiceDbContext(
+    DbContextOptions<OrderServiceDbContext> options, 
+    BuildingBlocks.Security.IEncryptionService encryptionService) 
+    : BaseDbContext(options), IApplicationDbContext, BuildingBlocks.Data.IUnitOfWork
 {
-    public OrderServiceDbContext(DbContextOptions<OrderServiceDbContext> options) : base(options) { }
 
     public DbSet<Order> Orders => Set<Order>();
     public DbSet<OrderItem> OrderItems => Set<OrderItem>();
@@ -17,6 +19,11 @@ public class OrderServiceDbContext : BaseDbContext, IApplicationDbContext, Build
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
+
+        // BP #35: Transparent PII Encryption at rest
+        var converter = new BuildingBlocks.Data.EncryptedValueConverter(encryptionService);
+        modelBuilder.Entity<Order>().Property(x => x.Email).HasConversion(converter);
+        modelBuilder.Entity<Order>().Property(x => x.Phone).HasConversion(converter);
         
         base.OnModelCreating(modelBuilder);
 
