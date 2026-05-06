@@ -1,3 +1,4 @@
+using BuildingBlocks.Domain;
 using BuildingBlocks.Models;
 using ProductService.Domain.Enums;
 using ProductService.Domain.ValueObjects;
@@ -9,7 +10,7 @@ namespace ProductService.Domain.Entities;
 /// Represents a Product in the system.
 /// Follows DDD principles with private setters and domain logic.
 /// </summary>
-public class Product : BaseEntity
+public class Product : BaseEntity, IAggregateRoot
 {
     private static readonly Regex SkuRegex = new("^[A-Z0-9-]{4,32}$", RegexOptions.Compiled);
     private const int MaxSkuLength = 32;

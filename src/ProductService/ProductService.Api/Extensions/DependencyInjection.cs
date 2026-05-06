@@ -41,6 +41,17 @@ public static class DependencyInjection
         }
 
         services.AddStandardHealthChecks(connectionString, null);
+        
+        // External Clients with Bulkheading
+        services.AddHttpClient<ProductService.Infrastructure.Clients.ExternalServiceClient>(c =>
+        {
+            c.Timeout = TimeSpan.FromSeconds(10);
+        })
+        .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler
+        {
+            MaxConnectionsPerServer = 5, // BP #37: Bulkheading
+            PooledConnectionLifetime = TimeSpan.FromMinutes(2)
+        });
 
         // MassTransit
         services.AddMassTransit(x =>
@@ -60,15 +71,27 @@ public static class DependencyInjection
 
             var rabbitMqOptions = configuration.GetSection(RabbitMqSettings.SectionName).Get<RabbitMqSettings>() ?? new RabbitMqSettings();
 
+            x.AddConfigureEndpointsCallback((context, name, cfg) =>
+            {
+                cfg.UseEntityFrameworkOutbox<ProductServiceDbContext>(context);
+            });
+
             if (environment.IsDevelopment() && string.IsNullOrEmpty(configuration["RabbitMQ:Host"]))
             {
-                x.UsingInMemory((context, cfg) => cfg.ConfigureEndpoints(context));
+                x.UsingInMemory((context, cfg) =>
+                {
+                    // BP #16: Exponential retry for transient failures
+                    cfg.UseMessageRetry(r => r.Exponential(3, TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(2)));
+                    cfg.ConfigureEndpoints(context);
+                });
             }
             else
             {
                 x.UsingRabbitMq((context, cfg) =>
                 {
                     cfg.Host(rabbitMqOptions.Host);
+                    // BP #16: Exponential retry for transient failures
+                    cfg.UseMessageRetry(r => r.Exponential(3, TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(2)));
                     cfg.ConfigureEndpoints(context);
                 });
             }
@@ -79,17 +102,6 @@ public static class DependencyInjection
         {
             options.Title = "ProductService API";
             options.Version = "v1";
-            
-            options.AddSecurity("JWT", Enumerable.Empty<string>(), new NSwag.OpenApiSecurityScheme
-            {
-                Type = NSwag.OpenApiSecuritySchemeType.ApiKey,
-                Name = "Authorization",
-                In = NSwag.OpenApiSecurityApiKeyLocation.Header,
-                Description = "Type into the textbox: Bearer {your JWT token}."
-            });
-
-            options.OperationProcessors.Add(
-                new NSwag.Generation.Processors.Security.AspNetCoreOperationSecurityScopeProcessor("JWT"));
         });
 
         return services;

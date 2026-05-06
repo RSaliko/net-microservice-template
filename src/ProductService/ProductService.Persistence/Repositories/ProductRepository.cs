@@ -14,6 +14,7 @@ public class ProductRepository(ProductServiceDbContext context)
     {
         return await context.Products
             .Where(x => x.Status == ProductStatus.Active)
-            .ExecuteUpdateAsync(s => s.SetProperty(b => b.Status, ProductStatus.Inactive), cancellationToken);
+            .ExecuteUpdateAsync(s => s.SetProperty(b => b.Status, ProductStatus.Inactive), cancellationToken)
+            .ConfigureAwait(false);
     }
 }

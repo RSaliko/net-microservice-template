@@ -9,10 +9,9 @@ using ProductService.Application.Features.Products.Mappers;
 namespace ProductService.Application.Features.Products.Queries.GetProducts;
 
 public record GetProductsQuery(
-    int PageNumber = 1,
-    int PageSize = 10,
-    string? SortBy = null,
-    string? Filter = null
+    PagingParams Paging,
+    SortingParams Sorting,
+    FilteringParams Filtering
 ) : IRequest<PaginatedResult<ProductDto>>;
 
 public class GetProductsQueryHandler(IProductRepository productRepository, ProductMapper mapper) 
@@ -20,16 +19,21 @@ public class GetProductsQueryHandler(IProductRepository productRepository, Produ
 {
     public async Task<PaginatedResult<ProductDto>> Handle(GetProductsQuery request, CancellationToken cancellationToken)
     {
+        // BP #23: Advanced Distributed Tracing - Manual Span with Business Tags
+        using var activity = BuildingBlocks.Observability.TracingConstants.ActivitySource.StartActivity("GetProducts");
+        activity?.SetTag("query.page", request.Paging.PageNumber);
+        activity?.SetTag("query.size", request.Paging.PageSize);
+        activity?.SetTag("query.filter", request.Filtering.SearchTerm);
         var query = productRepository.Query().AsNoTracking();
 
         // Filtering
-        if (!string.IsNullOrEmpty(request.Filter))
+        if (!string.IsNullOrEmpty(request.Filtering.SearchTerm))
         {
-            query = query.Where(p => p.Name.Contains(request.Filter) || p.Sku.Contains(request.Filter));
+            query = query.Where(p => p.Name.Contains(request.Filtering.SearchTerm) || p.Sku.Contains(request.Filtering.SearchTerm));
         }
 
         // Sorting
-        query = request.SortBy?.ToLower() switch
+        query = request.Sorting.SortBy?.ToLower() switch
         {
             "name" => query.OrderBy(p => p.Name),
             "sku" => query.OrderBy(p => p.Sku),
@@ -39,6 +43,6 @@ public class GetProductsQueryHandler(IProductRepository productRepository, Produ
 
         // BP: Standardized pagination with IQueryable projection
         return await mapper.ProjectToDto(query)
-            .ToPaginatedResultAsync(request.PageNumber, request.PageSize, cancellationToken);
+            .ToPaginatedResultAsync(request.Paging.PageNumber, request.Paging.PageSize, cancellationToken);
     }
 }

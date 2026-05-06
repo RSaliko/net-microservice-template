@@ -26,12 +26,16 @@ public static class DependencyInjection
             throw new InvalidOperationException("Connection string 'DefaultConnection' is not configured.");
         }
 
-        // BP: Using standardized DbContext registration from BuildingBlocks
-        services.AddAppDbContext<ProductServiceDbContext>(connectionString);
+        var writeConnection = connectionString;
+        var readConnection = configuration.GetConnectionString("ReplicaConnection") ?? writeConnection;
+
+        // BP: Using standardized DbContext registration from BuildingBlocks with Read-Write Splitting
+        services.AddReadWriteDbContext<ProductServiceDbContext>(writeConnection, readConnection);
 
         services.AddScoped<IApplicationDbContext>(sp => sp.GetRequiredService<ProductServiceDbContext>());
         services.AddScoped<BuildingBlocks.Data.IUnitOfWork>(sp => sp.GetRequiredService<ProductServiceDbContext>());
         services.AddScoped<IProductRepository, Repositories.ProductRepository>();
+        services.AddScoped<ProductService.Domain.Repositories.IProductReadOnlyRepository, Repositories.ProductReadOnlyRepository>();
         services.AddScoped<BuildingBlocks.Data.IDbInitializer, ProductServiceDbInitializer>();
 
         return services;

@@ -28,6 +28,11 @@ public class CreateProductCommandHandler(
 {
     public async Task<Guid> Handle(CreateProductCommand request, CancellationToken cancellationToken)
     {
+        // BP #23: Advanced Distributed Tracing - Manual Span with Business Tags
+        using var activity = BuildingBlocks.Observability.TracingConstants.ActivitySource.StartActivity("CreateProduct");
+        activity?.SetTag("product.sku", request.Sku);
+        activity?.SetTag("product.name", request.Name);
+        activity?.SetTag("product.price", request.UnitPrice);
         // BP: Domain logic encapsulated in the Entity constructor
         var product = new Product(
             request.Sku,
@@ -50,6 +55,9 @@ public class CreateProductCommandHandler(
         var cacheKey = $"product:{product.Id}";
         var productDto = productMapper.MapToDto(product);
         await cacheService.SetAsync(cacheKey, productDto, cancellationToken: cancellationToken);
+
+        // BP #14: Event-driven invalidation.
+        // TODO: In a production scenario, any Update/Delete Command should call cacheService.RemoveAsync(cacheKey).
 
         return product.Id;
     }

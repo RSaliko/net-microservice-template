@@ -106,7 +106,10 @@ public class ProductHandlerTests
         _productRepository.Query().Returns(new TestAsyncEnumerable<Product>(products));
 
         var handler = new GetProductsQueryHandler(_productRepository, _mapper);
-        var result = await handler.Handle(new GetProductsQuery(PageNumber: 1, PageSize: 10, SortBy: "name", Filter: "Key"), CancellationToken.None);
+        var result = await handler.Handle(new GetProductsQuery(
+            new PagingParams(1, 10), 
+            new SortingParams("name"), 
+            new FilteringParams("Key")), CancellationToken.None);
 
         result.TotalCount.Should().Be(2);
         result.Items.Should().HaveCount(2);

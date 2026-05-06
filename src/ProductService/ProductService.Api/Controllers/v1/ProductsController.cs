@@ -7,15 +7,12 @@ using ProductService.Application.Features.Products.Queries.GetProduct;
 using ProductService.Application.Features.Products.Queries.GetProducts;
 using ProductService.Application.Features.Products.DTOs;
 
-using Microsoft.AspNetCore.Authorization;
-
 namespace ProductService.Api.Controllers.v1;
 
 /// <summary>
 /// Controller for managing products.
 /// </summary>
-// [Authorize]
-public class ProductsController : BaseApiController
+public sealed class ProductsController : BaseApiController
 {
     /// <summary>
     /// Creates a new product.
@@ -60,6 +57,7 @@ public class ProductsController : BaseApiController
     /// <returns>Paginated list of products.</returns>
     [HttpGet]
     [ProducesResponseType(typeof(ApiResponse<PaginatedResult<ProductDto>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> GetProducts([FromQuery] GetProductsQuery query, CancellationToken cancellationToken)
     {
