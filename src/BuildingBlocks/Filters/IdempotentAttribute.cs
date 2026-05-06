@@ -19,20 +19,51 @@ public class IdempotentAttribute : Attribute, IAsyncActionFilter
         var cacheService = context.HttpContext.RequestServices.GetRequiredService<ICacheService>();
         var cacheKey = $"idempotency:{idempotencyKey}";
 
-        var cachedResult = await cacheService.GetAsync<object>(cacheKey);
+        var cachedResult = await cacheService.GetAsync<IdempotentResponse>(cacheKey);
         if (cachedResult != null)
         {
-            context.Result = new ConflictObjectResult(new { message = "Duplicate request detected with the same idempotency key." });
+            if (cachedResult.Status == "processing")
+            {
+                context.Result = new ConflictObjectResult(new { message = "Request is currently being processed." });
+                return;
+            }
+
+            context.Result = new ObjectResult(cachedResult.Data) { StatusCode = cachedResult.StatusCode };
             return;
         }
 
         // Mark as processing
-        await cacheService.SetAsync(cacheKey, "processing", TimeSpan.FromMinutes(10));
+        await cacheService.SetAsync(cacheKey, new IdempotentResponse { Status = "processing" }, TimeSpan.FromMinutes(5));
 
         var executedContext = await next();
 
-        // In a real scenario, we would cache the actual response here.
-        // For now, we just leave it as "processed" to prevent immediate retries.
-        await cacheService.SetAsync(cacheKey, "processed", TimeSpan.FromHours(1));
+        // Only cache as processed if request succeeded (2xx)
+        if (executedContext.HttpContext.Response.StatusCode >= 200 && executedContext.HttpContext.Response.StatusCode < 300)
+        {
+            object? responseData = null;
+            if (executedContext.Result is ObjectResult objectResult)
+            {
+                responseData = objectResult.Value;
+            }
+
+            await cacheService.SetAsync(cacheKey, new IdempotentResponse 
+            { 
+                Status = "processed", 
+                StatusCode = executedContext.HttpContext.Response.StatusCode,
+                Data = responseData
+            }, TimeSpan.FromHours(1));
+        }
+        else
+        {
+            // Remove idempotency key on failure to allow retries
+            await cacheService.RemoveAsync(cacheKey);
+        }
     }
+}
+
+public class IdempotentResponse
+{
+    public string Status { get; set; } = string.Empty;
+    public int StatusCode { get; set; }
+    public object? Data { get; set; }
 }

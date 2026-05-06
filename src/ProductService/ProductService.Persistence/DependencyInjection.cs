@@ -12,13 +12,13 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddPersistence(this IServiceCollection services, IConfiguration configuration)
     {
-        var host = Environment.GetEnvironmentVariable("MSSQL_HOST") ?? "localhost";
-        var port = Environment.GetEnvironmentVariable("MSSQL_PORT") ?? "14333";
-        var password = Environment.GetEnvironmentVariable("MSSQL_SA_PASSWORD") ?? "Your_strong_Password123";
+        var host = Environment.GetEnvironmentVariable("POSTGRES_HOST") ?? "localhost";
+        var port = Environment.GetEnvironmentVariable("POSTGRES_PORT") ?? "5432";
+        var password = Environment.GetEnvironmentVariable("POSTGRES_PASSWORD") ?? "Your_strong_Password123";
         var dbName = Environment.GetEnvironmentVariable("PRODUCT_DB_NAME") ?? "ProductServiceDb";
 
         var connectionString = !string.IsNullOrEmpty(password) && password != "Your_strong_Password123"
-            ? $"Server={host},{port};Database={dbName};User Id=sa;Password={password};TrustServerCertificate=True;Encrypt=False"
+            ? $"Host={host};Port={port};Database={dbName};Username=postgres;Password={password}"
             : configuration.GetConnectionString("DefaultConnection");
 
         if (string.IsNullOrWhiteSpace(connectionString))
@@ -30,6 +30,8 @@ public static class DependencyInjection
         services.AddAppDbContext<ProductServiceDbContext>(connectionString);
 
         services.AddScoped<IApplicationDbContext>(sp => sp.GetRequiredService<ProductServiceDbContext>());
+        services.AddScoped<BuildingBlocks.Data.IUnitOfWork>(sp => sp.GetRequiredService<ProductServiceDbContext>());
+        services.AddScoped<IProductRepository, Repositories.ProductRepository>();
         services.AddScoped<BuildingBlocks.Data.IDbInitializer, ProductServiceDbInitializer>();
 
         return services;

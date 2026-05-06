@@ -32,15 +32,16 @@ public class OrderServiceDbInitializer(OrderServiceDbContext context) : IDbIniti
 
         var orders = orderFaker.Generate(10);
 
+        var f = new Faker();
         foreach (var order in orders)
         {
             // Add some items
-            for (int i = 0; i < new Random().Next(1, 4); i++)
+            var itemCount = f.Random.Int(1, 3);
+            for (int i = 0; i < itemCount; i++)
             {
-                order.AddItem(Guid.NewGuid(), new Random().Next(1, 5), (decimal)new Random().NextDouble() * 500);
+                order.AddItem(Guid.NewGuid(), f.Random.Int(1, 5), (decimal)f.Random.Double() * 500);
             }
 
-            var f = new Faker();
             order.SetAddress(new Address(
                 f.Address.StreetAddress(),
                 f.Address.City(),
@@ -49,7 +50,7 @@ public class OrderServiceDbInitializer(OrderServiceDbContext context) : IDbIniti
                 f.Address.Country()
             ));
 
-            if (new Random().NextDouble() > 0.3) order.Activate();
+            if (f.Random.Double() > 0.3) order.Activate();
         }
 
         await _context.Orders.AddRangeAsync(orders);

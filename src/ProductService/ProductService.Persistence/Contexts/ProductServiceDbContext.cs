@@ -7,7 +7,7 @@ using System.Reflection;
 
 namespace ProductService.Persistence.Contexts;
 
-public class ProductServiceDbContext : BaseDbContext, IApplicationDbContext
+public class ProductServiceDbContext : BaseDbContext, IApplicationDbContext, BuildingBlocks.Data.IUnitOfWork
 {
     public ProductServiceDbContext(DbContextOptions<ProductServiceDbContext> options) : base(options) { }
 
@@ -22,5 +22,10 @@ public class ProductServiceDbContext : BaseDbContext, IApplicationDbContext
         modelBuilder.AddInboxStateEntity();
         modelBuilder.AddOutboxMessageEntity();
         modelBuilder.AddOutboxStateEntity();
+    }
+
+    public Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+    {
+        return base.SaveChangesAsync(cancellationToken);
     }
 }

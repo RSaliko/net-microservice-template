@@ -9,21 +9,18 @@ using ProductService.Application.Features.Products.Mappers;
 namespace ProductService.Application.Features.Products.Queries.GetProducts;
 
 public record GetProductsQuery(
-    int Page = 1,
+    int PageNumber = 1,
     int PageSize = 10,
     string? SortBy = null,
     string? Filter = null
 ) : IRequest<PaginatedResult<ProductDto>>;
 
-public class GetProductsQueryHandler(IApplicationDbContext context, ProductMapper mapper) 
+public class GetProductsQueryHandler(IProductRepository productRepository, ProductMapper mapper) 
     : IRequestHandler<GetProductsQuery, PaginatedResult<ProductDto>>
 {
-    private readonly IApplicationDbContext _context = context;
-    private readonly ProductMapper _mapper = mapper;
-
     public async Task<PaginatedResult<ProductDto>> Handle(GetProductsQuery request, CancellationToken cancellationToken)
     {
-        var query = _context.Products.AsNoTracking();
+        var query = productRepository.Query().AsNoTracking();
 
         // Filtering
         if (!string.IsNullOrEmpty(request.Filter))
@@ -41,7 +38,7 @@ public class GetProductsQueryHandler(IApplicationDbContext context, ProductMappe
         };
 
         // BP: Standardized pagination with IQueryable projection
-        return await _mapper.ProjectToDto(query)
-            .ToPaginatedResultAsync(request.Page, request.PageSize, cancellationToken);
+        return await mapper.ProjectToDto(query)
+            .ToPaginatedResultAsync(request.PageNumber, request.PageSize, cancellationToken);
     }
 }

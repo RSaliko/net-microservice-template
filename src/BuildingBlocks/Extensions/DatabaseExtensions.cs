@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using BuildingBlocks.Data;
 using Microsoft.Extensions.Logging;
+using Microsoft.EntityFrameworkCore;
 
 namespace BuildingBlocks.Extensions;
 
@@ -32,6 +33,18 @@ public static class DatabaseExtensions
             // Useful in Docker Compose where DB startup is not instant.
             logger.LogWarning(ex, "Database initialization failed. Service will start without seeded data. Retry manually or restart the service.");
         }
+    }
+    /// <summary>
+    /// BP #24: Bulk Soft Delete using ExecuteUpdate.
+    /// Efficiency: Runs a single UPDATE statement on the database.
+    /// </summary>
+    public static async Task<int> SoftDeleteAsync<T>(this IQueryable<T> query, CancellationToken cancellationToken = default)
+        where T : class, Contracts.ISoftDelete
+    {
+        return await query.ExecuteUpdateAsync(s => s
+            .SetProperty(p => p.IsDeleted, true)
+            .SetProperty(p => p.DeletedAt, DateTimeOffset.UtcNow),
+            cancellationToken);
     }
 }
 

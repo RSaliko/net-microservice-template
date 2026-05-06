@@ -22,7 +22,6 @@ public class Product : BaseEntity
     public ProductStatus Status { get; private set; } = ProductStatus.Active;
     public decimal UnitPrice { get; private set; }
     public int QuantityStock { get; private set; }
-    public byte[] RowVersion { get; private set; } = []; // Optimistic Concurrency
 
     // EF Core requirement
     private Product() { }
@@ -68,6 +67,19 @@ public class Product : BaseEntity
         QuantityStock = ValidateQuantityStock(quantityStock);
         
         if (QuantityStock == 0 && Status == ProductStatus.Active)
+        {
+            Status = ProductStatus.OutOfStock;
+        }
+    }
+
+    public void DeductStock(int quantity)
+    {
+        if (quantity <= 0) throw new ArgumentOutOfRangeException(nameof(quantity), "Quantity to deduct must be greater than 0");
+        if (QuantityStock < quantity) throw new InvalidOperationException($"Insufficient stock for product {Name}. Requested: {quantity}, Available: {QuantityStock}");
+        
+        QuantityStock -= quantity;
+        
+        if (QuantityStock == 0)
         {
             Status = ProductStatus.OutOfStock;
         }

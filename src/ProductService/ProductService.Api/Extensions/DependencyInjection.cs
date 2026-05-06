@@ -25,12 +25,20 @@ public static class DependencyInjection
             options.SubstituteApiVersionInUrl = true;
         });
 
-        // Health Checks
-        var host = Environment.GetEnvironmentVariable("MSSQL_HOST") ?? "localhost";
-        var port = Environment.GetEnvironmentVariable("MSSQL_PORT") ?? "14333";
-        var password = Environment.GetEnvironmentVariable("MSSQL_SA_PASSWORD") ?? "Your_strong_Password123";
+        // Health Checks - Extract connection string logic from Persistence layer
+        var host = Environment.GetEnvironmentVariable("POSTGRES_HOST") ?? "localhost";
+        var port = Environment.GetEnvironmentVariable("POSTGRES_PORT") ?? "5432";
+        var password = Environment.GetEnvironmentVariable("POSTGRES_PASSWORD") ?? "Your_strong_Password123";
         var dbName = Environment.GetEnvironmentVariable("PRODUCT_DB_NAME") ?? "ProductServiceDb";
-        var connectionString = $"Server={host},{port};Database={dbName};User Id=sa;Password={password};TrustServerCertificate=True;Encrypt=False";
+
+        var connectionString = !string.IsNullOrEmpty(password) && password != "Your_strong_Password123"
+            ? $"Host={host};Port={port};Database={dbName};Username=postgres;Password={password}"
+            : configuration.GetConnectionString("DefaultConnection");
+
+        if (string.IsNullOrWhiteSpace(connectionString))
+        {
+            throw new InvalidOperationException("Connection string not available for health checks. Check 'DefaultConnection' in config or POSTGRES_PASSWORD env var.");
+        }
 
         services.AddStandardHealthChecks(connectionString, null);
 
@@ -39,9 +47,11 @@ public static class DependencyInjection
         {
             x.AddEntityFrameworkOutbox<ProductServiceDbContext>(o =>
             {
-                o.UseSqlServer();
+                o.UsePostgres();
                 o.UseBusOutbox();
             });
+
+            x.SetKebabCaseEndpointNameFormatter();
 
             // Consumers
             // Scan Infrastructure assembly for consumers

@@ -1,3 +1,5 @@
+using System.IO;
+using Microsoft.AspNetCore.DataProtection;
 using BuildingBlocks.Conventions;
 using BuildingBlocks.Extensions;
 using Microsoft.AspNetCore.Mvc.ApplicationModels;
@@ -13,10 +15,21 @@ using Serilog;
 var builder = WebApplication.CreateBuilder(args);
 
 // Serilog
+builder.Logging.ClearProviders();
 builder.Host.UseSerilog((context, services, configuration) => configuration
     .ReadFrom.Configuration(context.Configuration)
     .ReadFrom.Services(services)
     .Enrich.FromLogContext());
+    
+// ── Graceful Shutdown ─────────────────────────────────────────────────────────
+builder.Services.Configure<HostOptions>(options =>
+{
+    options.ShutdownTimeout = TimeSpan.FromSeconds(30);
+});
+
+// Data Protection (Persistent Keys)
+builder.Services.AddDataProtection()
+    .PersistKeysToFileSystem(new DirectoryInfo(Path.Combine(builder.Environment.ContentRootPath, "keys")));
 
 // ── Service Layers ────────────────────────────────────────────────────────────
 builder.Services.AddApplication();

@@ -3,6 +3,7 @@
   <ItemGroup>
     <ProjectReference Include="..\ProductService.Application\ProductService.Application.csproj" />
     <ProjectReference Include="..\..\BuildingBlocks\BuildingBlocks.csproj" />
+    <ProjectReference Include="..\ProductService.Persistence\ProductService.Persistence.csproj" />
   </ItemGroup>
 
   <ItemGroup>

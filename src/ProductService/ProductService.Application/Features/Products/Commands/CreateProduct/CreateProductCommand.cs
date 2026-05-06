@@ -2,6 +2,7 @@ using BuildingBlocks.Contracts.Events;
 using BuildingBlocks.Caching;
 using MassTransit;
 using MediatR;
+using BuildingBlocks.Data;
 using ProductService.Application.Common.Interfaces;
 using ProductService.Application.Features.Products.DTOs;
 using ProductService.Application.Features.Products.Mappers;
@@ -18,17 +19,13 @@ public record CreateProductCommand(
 ) : IRequest<Guid>;
 
 public class CreateProductCommandHandler(
-    IApplicationDbContext context,
+    IProductRepository productRepository,
+    IUnitOfWork unitOfWork,
     IPublishEndpoint publishEndpoint,
     ProductMapper productMapper,
     ICacheService cacheService) 
     : IRequestHandler<CreateProductCommand, Guid>
 {
-    private readonly IApplicationDbContext _context = context;
-    private readonly IPublishEndpoint _publishEndpoint = publishEndpoint;
-    private readonly ProductMapper _productMapper = productMapper;
-    private readonly ICacheService _cacheService = cacheService;
-
     public async Task<Guid> Handle(CreateProductCommand request, CancellationToken cancellationToken)
     {
         // BP: Domain logic encapsulated in the Entity constructor
@@ -39,11 +36,11 @@ public class CreateProductCommandHandler(
             request.UnitPrice,
             request.QuantityStock);
 
-        _context.Products.Add(product);
-        await _context.SaveChangesAsync(cancellationToken);
+        await productRepository.AddAsync(product, cancellationToken);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
 
         // BP: Event-driven synchronization via Outbox (MassTransit)
-        await _publishEndpoint.Publish(new ProductCreatedEvent(
+        await publishEndpoint.Publish(new ProductCreatedEvent(
             product.Id,
             product.Name,
             product.Sku,
@@ -51,8 +48,8 @@ public class CreateProductCommandHandler(
             product.QuantityStock), cancellationToken);
 
         var cacheKey = $"product:{product.Id}";
-        var productDto = _productMapper.MapToDto(product);
-        await _cacheService.SetAsync(cacheKey, productDto, cancellationToken: cancellationToken);
+        var productDto = productMapper.MapToDto(product);
+        await cacheService.SetAsync(cacheKey, productDto, cancellationToken: cancellationToken);
 
         return product.Id;
     }

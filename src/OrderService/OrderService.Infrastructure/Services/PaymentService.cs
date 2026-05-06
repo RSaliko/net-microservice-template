@@ -10,6 +10,7 @@ namespace OrderService.Infrastructure.Services;
 /// </summary>
 public class PaymentService
 {
+    private static readonly Random _random = new();
     private readonly ILogger<PaymentService> _logger;
     private readonly AsyncRetryPolicy _retryPolicy;
 
@@ -21,17 +22,17 @@ public class PaymentService
         _retryPolicy = Policy
             .Handle<Exception>()
             .WaitAndRetryAsync(3, retryAttempt => 
-                TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)) + TimeSpan.FromMilliseconds(new Random().Next(0, 100)));
+                TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)) + TimeSpan.FromMilliseconds(_random.Next(0, 100)));
     }
 
-    public async Task<bool> ProcessPaymentAsync(Guid orderId, decimal amount, CancellationToken ct)
+    public async Task<bool> ProcessPaymentAsync(Guid orderId, decimal amount, CancellationToken cancellationToken)
     {
         return await _retryPolicy.ExecuteAsync(async () =>
         {
             _logger.LogInformation("Processing payment for Order {OrderId}...", orderId);
             
             // Simulate external call
-            await Task.Delay(100, ct);
+            await Task.Delay(100, cancellationToken);
             
             return true;
         });

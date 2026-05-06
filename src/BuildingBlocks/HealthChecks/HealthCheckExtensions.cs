@@ -11,7 +11,7 @@ public static class HealthCheckExtensions
         var builder = services.AddHealthChecks();
 
         if (!string.IsNullOrEmpty(sqlConnectionString))
-            builder.AddSqlServer(sqlConnectionString);
+            builder.AddNpgSql(sqlConnectionString);
 
         if (!string.IsNullOrEmpty(rabbitMqHost))
             builder.AddRabbitMQ($"amqp://guest:guest@{rabbitMqHost}", null, "rabbitmq");

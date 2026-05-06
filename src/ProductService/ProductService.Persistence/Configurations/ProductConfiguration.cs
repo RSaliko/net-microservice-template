@@ -15,7 +15,7 @@ public class ProductConfiguration : IEntityTypeConfiguration<Product>
             .IsRequired();
         builder.HasIndex(j => j.Sku)
             .IsUnique()
-            .HasFilter("[IsDeleted] = 0");
+            .HasFilter("\"IsDeleted\" = false");
 
         builder.Property(j => j.Name)
             .HasMaxLength(200)

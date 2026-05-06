@@ -1,16 +1,17 @@
 using Microsoft.AspNetCore.RateLimiting;
 using System.Threading.RateLimiting;
 using Serilog;
+using Microsoft.AspNetCore.DataProtection;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // ── Serilog Structured Logging ────────────────────────────────────────────────
+builder.Logging.ClearProviders();
 builder.Host.UseSerilog((context, services, configuration) => configuration
     .ReadFrom.Configuration(context.Configuration)
     .ReadFrom.Services(services)
     .Enrich.FromLogContext()
-    .Enrich.WithProperty("Service", "ApiGateway")
-    .WriteTo.Console());
+    .Enrich.WithProperty("Service", "ApiGateway"));
 
 // ── Graceful Shutdown ─────────────────────────────────────────────────────────
 builder.Services.Configure<HostOptions>(options =>
@@ -18,11 +19,18 @@ builder.Services.Configure<HostOptions>(options =>
     options.ShutdownTimeout = TimeSpan.FromSeconds(30);
 });
 
+// ── Data Protection (Persistent Keys) ─────────────────────────────────────────
+builder.Services.AddDataProtection()
+    .PersistKeysToFileSystem(new DirectoryInfo(Path.Combine(builder.Environment.ContentRootPath, "keys")));
+
 // ── YARP Reverse Proxy ────────────────────────────────────────────────────────
 builder.Services.AddReverseProxy()
     .LoadFromConfig(builder.Configuration.GetSection("ReverseProxy"));
 
 builder.Services.AddRequestTimeouts();
+
+// ── Performance & Compression ─────────────────────────────────────────────────
+builder.Services.AddResponseCompression(options => { options.EnableForHttps = true; });
 
 // ── Health Checks ─────────────────────────────────────────────────────────────
 builder.Services
@@ -37,6 +45,18 @@ builder.Services
         name: "product-service",
         failureStatus: Microsoft.Extensions.Diagnostics.HealthChecks.HealthStatus.Degraded,
         timeout: TimeSpan.FromSeconds(5));
+
+// ── CORS (FE Integration) ──────────────────────────────────────────────────
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("DefaultCorsPolicy", policy =>
+    {
+        policy.WithOrigins("http://localhost:4200", "http://localhost:4000")
+               .AllowAnyMethod()
+               .AllowAnyHeader()
+               .AllowCredentials();
+    });
+});
 
 // ── Rate Limiting (Global) ────────────────────────────────────────────────────
 builder.Services.AddRateLimiter(options =>
@@ -83,7 +103,9 @@ if (app.Environment.IsDevelopment())
 }
 
 // ── Middleware Pipeline ───────────────────────────────────────────────────────
+app.UseCors("DefaultCorsPolicy");
 app.UseRouting();
+app.UseResponseCompression();
 app.UseRequestTimeouts();
 app.UseRateLimiter();
 

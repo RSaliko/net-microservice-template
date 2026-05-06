@@ -38,26 +38,36 @@ public static class DependencyInjection
             options.SubstituteApiVersionInUrl = true;
         });
 
-        // Health Checks
-        var host = Environment.GetEnvironmentVariable("MSSQL_HOST") ?? "localhost";
-        var port = Environment.GetEnvironmentVariable("MSSQL_PORT") ?? "14333";
-        var password = Environment.GetEnvironmentVariable("MSSQL_SA_PASSWORD") ?? "Your_strong_Password123";
+        // Health Checks - Extract connection string logic from Persistence layer
+        var host = Environment.GetEnvironmentVariable("POSTGRES_HOST") ?? "localhost";
+        var port = Environment.GetEnvironmentVariable("POSTGRES_PORT") ?? "5432";
+        var password = Environment.GetEnvironmentVariable("POSTGRES_PASSWORD") ?? "Your_strong_Password123";
         var dbName = Environment.GetEnvironmentVariable("ORDER_DB_NAME") ?? "OrderServiceDb";
-        var connectionString = $"Server={host},{port};Database={dbName};User Id=sa;Password={password};TrustServerCertificate=True;Encrypt=False";
+
+        var connectionString = !string.IsNullOrEmpty(password) && password != "Your_strong_Password123"
+            ? $"Host={host};Port={port};Database={dbName};Username=postgres;Password={password}"
+            : configuration.GetConnectionString("DefaultConnection");
+
+        if (string.IsNullOrWhiteSpace(connectionString))
+        {
+            throw new InvalidOperationException("Connection string not available for health checks. Check 'DefaultConnection' in config or POSTGRES_PASSWORD env var.");
+        }
 
         services.AddStandardHealthChecks(connectionString, null);
 
-        // Refit Clients
+        // Refit Clients with Bulkheading (Resource Isolation)
         services.AddRefitClient<IProductServiceClient>()
             .ConfigureHttpClient((sp, c) =>
             {
                 var settings = sp.GetRequiredService<IOptions<ProductServiceSettings>>().Value;
                 c.BaseAddress = new Uri(settings.BaseUrl);
                 c.Timeout = TimeSpan.FromSeconds(10);
+            })
+            .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler
+            {
+                MaxConnectionsPerServer = 20, // BP #37: Bulkheading
+                PooledConnectionLifetime = TimeSpan.FromMinutes(5)
             });
-
-        var retryPolicy = HttpPolicyExtensions.HandleTransientHttpError()
-            .WaitAndRetryAsync(3, retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)));
 
         services.AddRefitClient<IWeatherApiClient>()
             .ConfigureHttpClient((sp, c) =>
@@ -66,17 +76,28 @@ public static class DependencyInjection
                 c.BaseAddress = new Uri(settings.BaseUrl);
                 c.Timeout = TimeSpan.FromSeconds(10);
             })
+            .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler
+            {
+                MaxConnectionsPerServer = 10, // BP #37: Bulkheading
+                PooledConnectionLifetime = TimeSpan.FromMinutes(2)
+            })
             .AddHttpMessageHandler<WeatherApiKeyHandler>()
-            .AddPolicyHandler(retryPolicy);
+            .AddPolicyHandler(BuildingBlocks.Resilience.ResiliencePolicies.GetWaitAndRetryPolicy());
 
         // MassTransit
         services.AddMassTransit(x =>
         {
             x.AddEntityFrameworkOutbox<OrderServiceDbContext>(o =>
             {
-                o.UseSqlServer();
+                o.UsePostgres();
                 o.UseBusOutbox();
             });
+
+            x.SetKebabCaseEndpointNameFormatter();
+
+            // Scan Infrastructure assembly for consumers
+            var infrastructureAssembly = Assembly.Load("OrderService.Infrastructure");
+            x.AddConsumers(infrastructureAssembly);
 
             var rabbitMqOptions = configuration.GetSection(RabbitMqSettings.SectionName).Get<RabbitMqSettings>() ?? new RabbitMqSettings();
 
@@ -99,6 +120,21 @@ public static class DependencyInjection
         {
             options.Title = "OrderService API";
             options.Version = "v1";
+            
+            // BP #5: Load XML documentation for better API docs
+            var assemblies = new[]
+            {
+                Assembly.GetExecutingAssembly(),
+                Assembly.Load("OrderService.Application"),
+                Assembly.Load("OrderService.Domain")
+            };
+
+            /*
+            foreach (var assembly in assemblies)
+            {
+                options.AddXmlDocumentationParameters(assembly);
+            }
+            */
             
             options.AddSecurity("JWT", Enumerable.Empty<string>(), new NSwag.OpenApiSecurityScheme
             {
