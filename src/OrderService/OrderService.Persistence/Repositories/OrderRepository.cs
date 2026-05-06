@@ -11,6 +11,7 @@ public class OrderRepository(OrderServiceDbContext context) : IOrderRepository
     {
         return await context.Orders
             .Include(x => x.Items)
+            .AsSplitQuery()
             .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
     }
 

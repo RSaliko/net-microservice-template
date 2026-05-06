@@ -39,30 +39,34 @@ public static class DependencyInjection
         });
 
         // Health Checks - Extract connection string logic from Persistence layer
-        var host = Environment.GetEnvironmentVariable("MSSQL_HOST") ?? "localhost";
-        var port = Environment.GetEnvironmentVariable("MSSQL_PORT") ?? "14333";
-        var password = Environment.GetEnvironmentVariable("MSSQL_SA_PASSWORD") ?? "Your_strong_Password123";
+        var host = Environment.GetEnvironmentVariable("POSTGRES_HOST") ?? "localhost";
+        var port = Environment.GetEnvironmentVariable("POSTGRES_PORT") ?? "5432";
+        var password = Environment.GetEnvironmentVariable("POSTGRES_PASSWORD") ?? "Your_strong_Password123";
         var dbName = Environment.GetEnvironmentVariable("ORDER_DB_NAME") ?? "OrderServiceDb";
 
-        // Match Persistence DependencyInjection logic: use config as fallback if default password
         var connectionString = !string.IsNullOrEmpty(password) && password != "Your_strong_Password123"
-            ? $"Server={host},{port};Database={dbName};User Id=sa;Password={password};TrustServerCertificate=True;Encrypt=False"
+            ? $"Host={host};Port={port};Database={dbName};Username=postgres;Password={password}"
             : configuration.GetConnectionString("DefaultConnection");
 
         if (string.IsNullOrWhiteSpace(connectionString))
         {
-            throw new InvalidOperationException("Connection string not available for health checks. Check 'DefaultConnection' in config or MSSQL_SA_PASSWORD env var.");
+            throw new InvalidOperationException("Connection string not available for health checks. Check 'DefaultConnection' in config or POSTGRES_PASSWORD env var.");
         }
 
         services.AddStandardHealthChecks(connectionString, null);
 
-        // Refit Clients
+        // Refit Clients with Bulkheading (Resource Isolation)
         services.AddRefitClient<IProductServiceClient>()
             .ConfigureHttpClient((sp, c) =>
             {
                 var settings = sp.GetRequiredService<IOptions<ProductServiceSettings>>().Value;
                 c.BaseAddress = new Uri(settings.BaseUrl);
                 c.Timeout = TimeSpan.FromSeconds(10);
+            })
+            .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler
+            {
+                MaxConnectionsPerServer = 20, // BP #37: Bulkheading
+                PooledConnectionLifetime = TimeSpan.FromMinutes(5)
             });
 
         services.AddRefitClient<IWeatherApiClient>()
@@ -72,6 +76,11 @@ public static class DependencyInjection
                 c.BaseAddress = new Uri(settings.BaseUrl);
                 c.Timeout = TimeSpan.FromSeconds(10);
             })
+            .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler
+            {
+                MaxConnectionsPerServer = 10, // BP #37: Bulkheading
+                PooledConnectionLifetime = TimeSpan.FromMinutes(2)
+            })
             .AddHttpMessageHandler<WeatherApiKeyHandler>()
             .AddPolicyHandler(BuildingBlocks.Resilience.ResiliencePolicies.GetWaitAndRetryPolicy());
 
@@ -80,7 +89,7 @@ public static class DependencyInjection
         {
             x.AddEntityFrameworkOutbox<OrderServiceDbContext>(o =>
             {
-                o.UseSqlServer();
+                o.UsePostgres();
                 o.UseBusOutbox();
             });
 
