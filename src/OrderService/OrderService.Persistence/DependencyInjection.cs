@@ -14,13 +14,13 @@ public static class DependencyInjection
     public static IServiceCollection AddPersistence(this IServiceCollection services, IConfiguration configuration)
     {
         // ... (previous logic)
-        var host = Environment.GetEnvironmentVariable("MSSQL_HOST") ?? "localhost";
-        var port = Environment.GetEnvironmentVariable("MSSQL_PORT") ?? "14333";
-        var password = Environment.GetEnvironmentVariable("MSSQL_SA_PASSWORD") ?? "Your_strong_Password123";
+        var host = Environment.GetEnvironmentVariable("POSTGRES_HOST") ?? "localhost";
+        var port = Environment.GetEnvironmentVariable("POSTGRES_PORT") ?? "5432";
+        var password = Environment.GetEnvironmentVariable("POSTGRES_PASSWORD") ?? "Your_strong_Password123";
         var dbName = Environment.GetEnvironmentVariable("ORDER_DB_NAME") ?? "OrderServiceDb";
 
         var connectionString = !string.IsNullOrEmpty(password) && password != "Your_strong_Password123"
-            ? $"Server={host},{port};Database={dbName};User Id=sa;Password={password};TrustServerCertificate=True;Encrypt=False"
+            ? $"Host={host};Port={port};Database={dbName};Username=postgres;Password={password}"
             : configuration.GetConnectionString("DefaultConnection");
 
         if (string.IsNullOrWhiteSpace(connectionString))

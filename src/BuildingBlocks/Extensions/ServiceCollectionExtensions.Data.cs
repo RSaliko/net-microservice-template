@@ -20,7 +20,7 @@ public static partial class ServiceCollectionExtensions
 
         services.AddDbContext<TContext>((sp, options) =>
         {
-            options.UseSqlServer(connectionString, sql => sql.EnableRetryOnFailure())
+            options.UseNpgsql(connectionString, npgsql => npgsql.EnableRetryOnFailure())
                    .AddInterceptors(sp.GetRequiredService<AuditInterceptor>())
                    .AddInterceptors(sp.GetRequiredService<DispatchDomainEventsInterceptor>());
         });

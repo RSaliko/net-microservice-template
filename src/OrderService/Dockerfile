@@ -1,6 +1,7 @@
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS base
 WORKDIR /app
 EXPOSE 8080
+RUN apt-get update && apt-get install -y libgssapi-krb5-2 && rm -rf /var/lib/apt/lists/*
 
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 ARG BUILD_CONFIGURATION=Release
@@ -14,7 +15,7 @@ COPY ["src/OrderService/OrderService.Persistence/OrderService.Persistence.csproj
 COPY ["src/OrderService/OrderService.Infrastructure/OrderService.Infrastructure.csproj", "src/OrderService/OrderService.Infrastructure/"]
 COPY ["src/BuildingBlocks/BuildingBlocks.csproj", "src/BuildingBlocks/"]
 
-RUN dotnet restore "src/OrderService/OrderService.Api/OrderService.Api.csproj" --disable-parallel
+RUN dotnet restore "src/OrderService/OrderService.Api/OrderService.Api.csproj"
 
 # Copy full source and build
 COPY . .

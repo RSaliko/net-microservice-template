@@ -34,7 +34,7 @@ public abstract class BaseDbContext : DbContext
 
             // Standardize RowVersion for Optimistic Concurrency
             var rowVersionProp = entityType.FindProperty("RowVersion");
-            if (rowVersionProp != null && rowVersionProp.ClrType == typeof(byte[]))
+            if (rowVersionProp != null && (rowVersionProp.ClrType == typeof(byte[]) || rowVersionProp.ClrType == typeof(uint)))
             {
                 modelBuilder.Entity(entityType.ClrType)
                     .Property("RowVersion")

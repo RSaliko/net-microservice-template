@@ -18,7 +18,7 @@ public abstract class BaseEntity<TId> : ISoftDelete, IAuditEntity
     public DateTimeOffset? DeletedAt { get; set; }
 
     // Optimistic Concurrency
-    public byte[] RowVersion { get; private set; } = [];
+    public uint RowVersion { get; private set; }
 
     // Domain Events
     private readonly List<IDomainEvent> _domainEvents = [];

@@ -22,7 +22,6 @@ public class Product : BaseEntity
     public ProductStatus Status { get; private set; } = ProductStatus.Active;
     public decimal UnitPrice { get; private set; }
     public int QuantityStock { get; private set; }
-    public byte[] RowVersion { get; private set; } = []; // Optimistic Concurrency
 
     // EF Core requirement
     private Product() { }

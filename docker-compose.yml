@@ -4,74 +4,96 @@ services:
     image: net-gateway
     build:
       context: .
-      dockerfile: src/ApiGateway/Dockerfile
+      dockerfile: src/ApiGateway/Dockerfile.local
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ReverseProxy__Clusters__product-service-cluster__Destinations__destination1__Address=http://product-service:8080
       - ReverseProxy__Clusters__order-service-cluster__Destinations__destination1__Address=http://order-service:8080
     ports:
       - "3000:8080"
+    volumes:
+      - ./.aspnet/keys/gateway:/app/keys
     depends_on:
-      - product-service
-      - order-service
-      - jaeger
+      product-service:
+        condition: service_started
+      order-service:
+        condition: service_started
+      jaeger:
+        condition: service_started
 
   product-service:
     container_name: net-product-service
     image: net-product-service
     build:
       context: .
-      dockerfile: src/ProductService/Dockerfile
+      dockerfile: src/ProductService/Dockerfile.local
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
-      - ConnectionStrings__DefaultConnection=Server=sqlserver;Database=ProductServiceDb;User Id=sa;Password=Your_strong_Password123;TrustServerCertificate=True;Encrypt=False
+      - ConnectionStrings__DefaultConnection=Host=postgres;Database=ProductServiceDb;Username=postgres;Password=Your_strong_Password123
       - RabbitMQ__Host=rabbitmq
       - REDIS_HOST=redis
       - REDIS_PORT=6379
-      - MSSQL_HOST=sqlserver
-      - MSSQL_PORT=1433
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4317
       - Jwt__Secret=super_secret_key_for_development_purposes_only_123456
     ports:
       - "5170:8080"
+    volumes:
+      - ./.aspnet/keys/product:/app/keys
     depends_on:
-      - sqlserver
-      - rabbitmq
-      - redis
-      - jaeger
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      jaeger:
+        condition: service_started
 
   order-service:
     container_name: net-order-service
     image: net-order-service
     build:
       context: .
-      dockerfile: src/OrderService/Dockerfile
+      dockerfile: src/OrderService/Dockerfile.local
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
-      - ConnectionStrings__DefaultConnection=Server=sqlserver;Database=OrderServiceDb;User Id=sa;Password=Your_strong_Password123;TrustServerCertificate=True;Encrypt=False
+      - ConnectionStrings__DefaultConnection=Host=postgres;Database=OrderServiceDb;Username=postgres;Password=Your_strong_Password123
       - RabbitMQ__Host=rabbitmq
       - REDIS_HOST=redis
       - REDIS_PORT=6379
-      - MSSQL_HOST=sqlserver
-      - MSSQL_PORT=1433
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4317
       - Jwt__Secret=super_secret_key_for_development_purposes_only_123456
     ports:
       - "5084:8080"
+    volumes:
+      - ./.aspnet/keys/order:/app/keys
     depends_on:
-      - sqlserver
-      - rabbitmq
-      - redis
-      - jaeger
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      jaeger:
+        condition: service_started
 
-  sqlserver:
-    container_name: net-sqlserver
-    image: mcr.microsoft.com/mssql/server:2022-latest
+  postgres:
+    container_name: net-postgres
+    image: postgres:latest
     environment:
-      - ACCEPT_EULA=Y
-      - MSSQL_SA_PASSWORD=Your_strong_Password123
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=Your_strong_Password123
     ports:
-      - "14333:1433"
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   rabbitmq:
     container_name: net-rabbitmq
@@ -79,12 +101,22 @@ services:
     ports:
       - "5672:5672"
       - "15672:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "check_running"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   redis:
     container_name: net-redis
     image: redis:latest
     ports:
       - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   jaeger:
     container_name: net-jaeger
@@ -94,3 +126,4 @@ services:
     ports:
       - "16686:16686"
       - "4317:4317"
+
